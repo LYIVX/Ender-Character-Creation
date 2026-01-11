@@ -121,7 +121,7 @@ export default function App() {
   };
 
   const openAbout = () => {
-    window.alert("Character Atelier Sheet");
+    window.alert("Character Creation");
     setMenuOpen(null);
   };
 
