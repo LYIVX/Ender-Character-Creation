@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Character Atelier Sheet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Spectral:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #130810;
+      --bg-glow: #2a0f21;
+      --panel: #1b0b18;
+      --panel-2: #241028;
+      --ink: #f6eaf2;
+      --muted: #dbc7d7;
+      --line: #c03b84;
+      --line-strong: #e255a1;
+      --accent: #ff86c8;
+      --accent-2: #7dd6f6;
+      --shadow: rgba(0, 0, 0, 0.6);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 10% 20%, #35122d 0%, #140813 45%),
+        radial-gradient(circle at 80% 10%, #1b163a 0%, #12070f 40%),
+        #12070f;
+      color: var(--ink);
+      font-family: "Spectral", "Times New Roman", serif;
+    }
+
+    .frame {
+      max-width: 1700px;
+      margin: 16px auto;
+      padding: 16px 24px 16px 16px;
+      border: 6px solid var(--line-strong);
+      box-shadow: 0 18px 50px var(--shadow);
+      background: linear-gradient(180deg, #220b1a 0%, #12070f 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .frame::before,
+    .frame::after {
+      content: "";
+      position: absolute;
+      width: 380px;
+      height: 380px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 134, 200, 0.12), transparent 70%);
+      z-index: 0;
+    }
+
+    .frame::before {
+      top: -120px;
+      right: 10%;
+    }
+
+    .frame::after {
+      bottom: -140px;
+      left: 8%;
+      background: radial-gradient(circle, rgba(125, 214, 246, 0.12), transparent 70%);
+    }
+
+    .sheet {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 36% 64%;
+      gap: 14px;
+      min-height: 90vh;
+    }
+
+    .left-panel {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 12px;
+    }
+
+    .portrait-card {
+      border: 3px solid var(--line-strong);
+      background: #131a2c;
+      position: relative;
+      min-height: 360px;
+      overflow: hidden;
+    }
+
+    .portrait-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.0), rgba(9, 4, 10, 0.7));
+      pointer-events: none;
+    }
+
+    .portrait {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .portrait-placeholder {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(135deg, rgba(60, 78, 108, 0.9), rgba(20, 30, 50, 0.95)),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.06) 0px, rgba(255, 255, 255, 0.06) 1px, transparent 1px, transparent 8px);
+      color: #dde6f2;
+      font-family: "Cinzel", "Times New Roman", serif;
+      font-size: 20px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .upload-chip {
+      position: absolute;
+      right: 14px;
+      bottom: 12px;
+      padding: 8px 12px;
+      background: rgba(17, 9, 20, 0.8);
+      border: 1px solid var(--line);
+      color: var(--ink);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .upload-chip input {
+      display: none;
+    }
+
+    .bio-card {
+      border: 3px solid var(--line);
+      background: linear-gradient(180deg, #1a0b1b, #12070f 85%);
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+    }
+
+    .bio-card header {
+      font-family: "Cinzel", "Times New Roman", serif;
+      font-size: 18px;
+      letter-spacing: 2px;
+      padding: 10px 14px;
+      border-bottom: 2px solid var(--line);
+      background: rgba(255, 134, 200, 0.08);
+    }
+
+    .notes-scroll {
+      flex: 1;
+      min-height: 220px;
+      overflow-y: visible;
+      width: 100%;
+      padding: 10px 12px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .note-section {
+      border: 2px solid rgba(192, 59, 132, 0.5);
+      background: rgba(16, 7, 14, 0.6);
+      padding: 8px 10px 12px;
+      width: 100%;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .note-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-family: "Cinzel", "Times New Roman", serif;
+      font-size: 15px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .note-header button {
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--ink);
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 4px 6px;
+      cursor: pointer;
+    }
+
+    .note-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px 0;
+      width: 100%;
+    }
+
+    .note-controls select {
+      flex: 1;
+      background: rgba(255, 134, 200, 0.12);
+      border: 1px solid var(--line);
+      color: var(--ink);
+      padding: 6px 10px;
+      font-family: "Cinzel", "Times New Roman", serif;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .note-controls select option {
+      background: #1a0b1b;
+      color: var(--ink);
+    }
+
+    .note-controls button {
+      border: 1px solid var(--line);
+      background: rgba(255, 134, 200, 0.12);
+      color: var(--ink);
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 6px 10px;
+      font-family: "Cinzel", "Times New Roman", serif;
+      cursor: pointer;
+    }
+
+    .note-section textarea {
+      display: block;
+      width: 100%;
+      min-height: 70px;
+      padding: 6px 6px;
+      border: none;
+      background: transparent;
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 1.4;
+      resize: none;
+      font-family: "Spectral", "Times New Roman", serif;
+      flex: 1;
+    }
+
+    .right-panel {
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 12px;
+    }
+
+    .section {
+      border: 3px solid var(--line);
+      padding: 12px 16px;
+      background: linear-gradient(180deg, rgba(35, 14, 32, 0.94), rgba(20, 9, 18, 0.95));
+    }
+
+    .section-title {
+      font-family: "Cinzel", "Times New Roman", serif;
+      font-size: 20px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .identity {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px 18px;
+    }
+
+    .label-row {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .label-row span {
+      font-family: "Cinzel", "Times New Roman", serif;
+      font-size: 18px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+
+    .line-input {
+      width: 100%;
+      border: none;
+      border-bottom: 2px solid var(--line);
+      background: transparent;
+      color: var(--ink);
+      font-size: 18px;
+      padding: 2px 4px 2px;
+      font-family: "Spectral", "Times New Roman", serif;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .mini-list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .list-row {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 10px;
+      font-size: 17px;
+    }
+
+    .dot-row {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      align-items: center;
+      gap: 10px;
+      font-size: 17px;
+    }
+
+    .dots {
+      display: inline-flex;
+      gap: 4px;
+    }
+
+    .dot-input {
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--ink);
+      border-radius: 50%;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .dot-input:checked {
+      background: var(--accent);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(255, 134, 200, 0.25);
+    }
+
+    .core-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .stacked {
+      display: grid;
+      gap: 12px;
+    }
+
+    .range-row {
+      display: grid;
+      grid-template-columns: 80px 1fr 90px;
+      gap: 10px;
+      align-items: center;
+      font-size: 16px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .traits {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 18px;
+      font-size: 16px;
+    }
+
+    .traits label,
+    .checkbox-list label {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .traits input,
+    .checkbox-list input {
+      width: 15px;
+      height: 15px;
+      accent-color: var(--accent);
+    }
+
+    .skill-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .social-section {
+      border: 3px solid var(--line-strong);
+      background: linear-gradient(180deg, rgba(40, 15, 34, 0.95), rgba(17, 7, 13, 0.98));
+    }
+
+    .social-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .social-grid {
+      display: grid;
+      gap: 6px;
+    }
+
+    .social-slider {
+      display: grid;
+      grid-template-columns: 70px 1fr 90px;
+      gap: 8px;
+      align-items: center;
+      font-size: 16px;
+    }
+
+    .checkbox-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 16px;
+      font-size: 16px;
+    }
+
+    .stat-chip {
+      font-family: "Cinzel", "Times New Roman", serif;
+      font-size: 16px;
+      letter-spacing: 1px;
+      padding: 4px 8px;
+      border: 1px solid var(--line);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 134, 200, 0.12);
+    }
+
+    .fade-in {
+      animation: rise 0.8s ease both;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin: 18px auto 28px;
+      max-width: 1500px;
+    }
+
+    .action-btn {
+      font-family: "Cinzel", "Times New Roman", serif;
+      font-size: 16px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 10px 22px;
+      border: 2px solid var(--line-strong);
+      background: linear-gradient(180deg, rgba(255, 134, 200, 0.18), rgba(12, 6, 12, 0.6));
+      color: var(--ink);
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    .action-btn:hover {
+      border-color: var(--accent);
+      box-shadow: 0 10px 25px rgba(255, 134, 200, 0.2);
+    }
+
+    @keyframes rise {
+      from { transform: translateY(12px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @media (max-width: 1100px) {
+      .sheet {
+        grid-template-columns: 1fr;
+      }
+
+      .identity,
+      .stats-grid,
+      .core-grid,
+      .skill-grid,
+      .social-content {
+        grid-template-columns: 1fr;
+      }
+
+      .range-row,
+      .social-slider {
+        grid-template-columns: 70px 1fr 80px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="sheet">
+      <div class="left-panel fade-in">
+        <div class="portrait-card">
+          <img class="portrait" id="portraitPreview" alt="portrait preview" />
+          <div class="portrait-placeholder" id="portraitPlaceholder">Upload Portrait</div>
+          <label class="upload-chip">
+            Upload
+            <input type="file" id="portraitInput" accept="image/*" />
+          </label>
+        </div>
+        <div class="bio-card">
+          <header>Character Notes</header>
+          <div class="note-controls">
+            <select id="noteSelect">
+              <option value="Personality">Personality</option>
+              <option value="Hobbies">Hobbies</option>
+              <option value="Food-Related">Food-Related</option>
+              <option value="Habits">Habits</option>
+              <option value="Quirks">Quirks</option>
+              <option value="Extras">Extras</option>
+            </select>
+            <button type="button" id="addNoteBtn">Add</button>
+          </div>
+          <div class="notes-scroll" id="notesScroll">
+            <div class="note-section" data-note-title="Personality">
+              <div class="note-header">
+                <span>Personality</span>
+                <button type="button" class="remove-note">Remove</button>
+              </div>
+              <textarea aria-label="Personality notes"></textarea>
+            </div>
+            <div class="note-section" data-note-title="Hobbies">
+              <div class="note-header">
+                <span>Hobbies</span>
+                <button type="button" class="remove-note">Remove</button>
+              </div>
+              <textarea aria-label="Hobbies notes"></textarea>
+            </div>
+            <div class="note-section" data-note-title="Food-Related">
+              <div class="note-header">
+                <span>Food-Related</span>
+                <button type="button" class="remove-note">Remove</button>
+              </div>
+              <textarea aria-label="Food related notes"></textarea>
+            </div>
+            <div class="note-section" data-note-title="Habits">
+              <div class="note-header">
+                <span>Habits</span>
+                <button type="button" class="remove-note">Remove</button>
+              </div>
+              <textarea aria-label="Habits notes"></textarea>
+            </div>
+            <div class="note-section" data-note-title="Quirks">
+              <div class="note-header">
+                <span>Quirks</span>
+                <button type="button" class="remove-note">Remove</button>
+              </div>
+              <textarea aria-label="Quirks notes"></textarea>
+            </div>
+            <div class="note-section" data-note-title="Extras">
+              <div class="note-header">
+                <span>Extras</span>
+                <button type="button" class="remove-note">Remove</button>
+              </div>
+              <textarea aria-label="Extras notes"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="right-panel fade-in">
+        <section class="section" data-section="identity">
+          <div class="section-title">Identity</div>
+          <div class="identity">
+            <div class="label-row"><span>Name</span><input class="line-input" type="text" value="Jane Doe" /></div>
+            <div class="label-row"><span>Nickname</span><input class="line-input" type="text" value="Unknown" /></div>
+            <div class="label-row"><span>Race/Species</span><input class="line-input" type="text" value="Unknown" /></div>
+            <div class="label-row"><span>Age</span><input class="line-input" type="text" value="XX" /></div>
+            <div class="label-row"><span>Gender</span><input class="line-input" type="text" value="Unknown" /></div>
+            <div class="label-row"><span>Birthday</span><input class="line-input" type="text" value="Unknown" /></div>
+            <div class="label-row"><span>Class/Job</span><input class="line-input" type="text" value="Unknown" /></div>
+            <div class="label-row"><span>Height</span><input class="line-input" type="text" value="XXX cm" /></div>
+          </div>
+        </section>
+
+        <section class="section" data-section="body">
+          <div class="section-title">Body</div>
+          <div class="stats-grid">
+            <div class="mini-list">
+              <div class="dot-row"><span class="stat-chip">Strength</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Dexterity</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Health</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+            </div>
+            <div class="mini-list">
+              <div class="dot-row"><span class="stat-chip">Energy</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Beauty</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Style</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+            </div>
+          </div>
+        </section>
+
+        <div class="core-grid">
+          <section class="section" data-section="skills">
+            <div class="section-title">Skills</div>
+            <div class="skill-grid">
+              <div class="mini-list">
+                <div class="dot-row"><span class="stat-chip">Perception</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+                <div class="dot-row"><span class="stat-chip">Communication</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+                <div class="dot-row"><span class="stat-chip">Persuasion</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+                <div class="dot-row"><span class="stat-chip">Mediation</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+                <div class="dot-row"><span class="stat-chip">Literacy</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+                <div class="dot-row"><span class="stat-chip">Creativity</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+                <div class="dot-row"><span class="stat-chip">Cooking</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+                <div class="dot-row"><span class="stat-chip">Combat</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              </div>
+              <div class="mini-list">
+                <div class="dot-row"><span class="stat-chip">Survival</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+                <div class="dot-row"><span class="stat-chip">Stealth</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+                <div class="dot-row"><span class="stat-chip">Tech Savvy</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+                <div class="dot-row"><span class="stat-chip">Street Smarts</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+                <div class="dot-row"><span class="stat-chip">Seduction</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+                <div class="dot-row"><span class="stat-chip">Animal Handling</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+                <div class="dot-row"><span class="stat-chip">Child Handling</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section" data-section="priorities">
+            <div class="section-title">Priorities</div>
+            <div class="mini-list">
+              <div class="dot-row"><span class="stat-chip">Justice</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Truth</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Power</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Fame</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Wealth</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Family</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Friends</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Love</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Home</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Health</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Approval</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+            </div>
+          </section>
+        </div>
+
+        <section class="section" data-section="mind">
+          <div class="section-title">Mind</div>
+          <div class="stats-grid">
+            <div class="mini-list">
+              <div class="dot-row"><span class="stat-chip">Intelligence</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Happiness</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Spirituality</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Confidence</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+            </div>
+            <div class="mini-list">
+              <div class="dot-row"><span class="stat-chip">Humor</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Anxiety</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Patience</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Passion</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+            </div>
+          </div>
+          <div class="stacked" style="margin-top: 10px;">
+            <div class="range-row"><span>Nice</span><input type="range" min="0" max="100" value="45" /><span>Mean</span></div>
+            <div class="range-row"><span>Brave</span><input type="range" min="0" max="100" value="50" /><span>Cowardly</span></div>
+            <div class="range-row"><span>Pacifist</span><input type="range" min="0" max="100" value="55" /><span>Violent</span></div>
+            <div class="range-row"><span>Thoughtful</span><input type="range" min="0" max="100" value="45" /><span>Impulsive</span></div>
+            <div class="range-row"><span>Agreeable</span><input type="range" min="0" max="100" value="40" /><span>Contrary</span></div>
+            <div class="range-row"><span>Idealistic</span><input type="range" min="0" max="100" value="45" /><span>Pragmatic</span></div>
+            <div class="range-row"><span>Frugal</span><input type="range" min="0" max="100" value="50" /><span>Big Spender</span></div>
+            <div class="range-row"><span>Extrovert</span><input type="range" min="0" max="100" value="55" /><span>Introvert</span></div>
+            <div class="range-row"><span>Collected</span><input type="range" min="0" max="100" value="50" /><span>Wild</span></div>
+          </div>
+          <div class="traits" style="margin-top: 10px;">
+            <label><input type="checkbox" />Ambitious</label>
+            <label><input type="checkbox" />Possessive</label>
+            <label><input type="checkbox" />Stubborn</label>
+            <label><input type="checkbox" />Jealous</label>
+            <label><input type="checkbox" />Decisive</label>
+            <label><input type="checkbox" />Perfectionist</label>
+          </div>
+        </section>
+
+        <section class="section social-section" data-section="social">
+          <div class="section-title">Social</div>
+          <div class="social-content">
+            <div>
+              <div class="dot-row"><span class="stat-chip">Charisma</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Empathy</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Generosity</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Wealth</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Aggression</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+              <div class="dot-row"><span class="stat-chip">Libido</span><div class="dots"><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /><input class="dot-input" type="checkbox" /></div></div>
+            </div>
+            <div class="social-grid">
+              <div class="social-slider"><span>Honest</span><input type="range" min="0" max="100" value="55" /><span>Deceptive</span></div>
+              <div class="social-slider"><span>Leader</span><input type="range" min="0" max="100" value="60" /><span>Follower</span></div>
+              <div class="social-slider"><span>Polite</span><input type="range" min="0" max="100" value="50" /><span>Rude</span></div>
+              <div class="social-slider"><span>Political</span><input type="range" min="0" max="100" value="45" /><span>Indifferent</span></div>
+            </div>
+            <div class="checkbox-list">
+              <label><input type="checkbox" />Cool</label>
+              <label><input type="checkbox" />Flirty</label>
+              <label><input type="checkbox" />Cute</label>
+              <label><input type="checkbox" />Obedient</label>
+              <label><input type="checkbox" />Fun</label>
+              <label><input type="checkbox" />Forgiving</label>
+              <label><input type="checkbox" />Gullible</label>
+              <label><input type="checkbox" />Scary</label>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="action-btn" id="importBtn" type="button">Import</button>
+    <button class="action-btn" id="exportBtn" type="button">Export</button>
+    <input type="file" id="importFile" accept="application/json" style="display:none" />
+  </div>
+
+  <script>
+    const portraitInput = document.getElementById("portraitInput");
+    const portraitPreview = document.getElementById("portraitPreview");
+    const portraitPlaceholder = document.getElementById("portraitPlaceholder");
+    const importBtn = document.getElementById("importBtn");
+    const exportBtn = document.getElementById("exportBtn");
+    const importFile = document.getElementById("importFile");
+    const addNoteBtn = document.getElementById("addNoteBtn");
+    const noteSelect = document.getElementById("noteSelect");
+    let portraitData = "";
+
+    portraitInput.addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (!file) {
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        portraitData = reader.result;
+        portraitPreview.src = portraitData;
+        portraitPlaceholder.style.display = "none";
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.querySelectorAll(".dots").forEach((group) => {
+      const boxes = Array.from(group.querySelectorAll("input[type=\"checkbox\"]"));
+      boxes.forEach((box, index) => {
+        box.addEventListener("click", () => {
+          const isChecked = box.checked;
+          boxes.forEach((item, i) => {
+            item.checked = isChecked ? i <= index : i < index;
+          });
+        });
+      });
+    });
+
+    document.addEventListener("click", (event) => {
+      const button = event.target.closest(".remove-note");
+      if (!button) {
+        return;
+      }
+      const section = button.closest(".note-section");
+      if (section) {
+        section.remove();
+      }
+    });
+
+    addNoteBtn.addEventListener("click", () => {
+      const title = noteSelect.value;
+      const scroll = document.getElementById("notesScroll");
+      if (!title || !scroll) {
+        return;
+      }
+      const exists = Array.from(scroll.querySelectorAll(".note-section"))
+        .some((section) => section.dataset.noteTitle === title);
+      if (exists) {
+        return;
+      }
+      scroll.appendChild(createNoteSection(title, ""));
+    });
+
+    const sectionByName = (name) => {
+      return document.querySelector(`[data-section=\"${name}\"]`);
+    };
+
+    const getDotRows = (section) => {
+      const rows = section.querySelectorAll(".dot-row");
+      const result = {};
+      rows.forEach((row) => {
+        const label = row.querySelector(".stat-chip")?.textContent.trim() || "Unknown";
+        const count = row.querySelectorAll(".dot-input:checked").length;
+        result[label] = count;
+      });
+      return result;
+    };
+
+    const setDotRows = (section, data) => {
+      const rows = section.querySelectorAll(".dot-row");
+      rows.forEach((row) => {
+        const label = row.querySelector(".stat-chip")?.textContent.trim() || "Unknown";
+        if (!(label in data)) {
+          return;
+        }
+        const count = Number(data[label]) || 0;
+        const dots = Array.from(row.querySelectorAll(".dot-input"));
+        dots.forEach((dot, index) => {
+          dot.checked = index < count;
+        });
+      });
+    };
+
+    const getIdentity = () => {
+      const identity = {};
+      document.querySelectorAll(".identity .label-row").forEach((row) => {
+        const key = row.querySelector("span")?.textContent.trim() || "Unknown";
+        const input = row.querySelector("input");
+        identity[key] = input ? input.value : "";
+      });
+      return identity;
+    };
+
+    const collectNotes = () => {
+      return Array.from(document.querySelectorAll(".note-section")).map((section) => {
+        return {
+          title: section.dataset.noteTitle || "Untitled",
+          text: section.querySelector("textarea")?.value || ""
+        };
+      });
+    };
+
+    const createNoteSection = (title, text) => {
+      const section = document.createElement("div");
+      section.className = "note-section";
+      section.dataset.noteTitle = title;
+      section.innerHTML = `
+        <div class="note-header">
+          <span>${title}</span>
+          <button type="button" class="remove-note">Remove</button>
+        </div>
+        <textarea aria-label="${title} notes"></textarea>
+      `;
+      const textarea = section.querySelector("textarea");
+      if (textarea) {
+        textarea.value = text || "";
+      }
+      return section;
+    };
+
+    const setNotes = (notes) => {
+      if (!Array.isArray(notes)) {
+        return;
+      }
+      const scroll = document.getElementById("notesScroll");
+      if (!scroll) {
+        return;
+      }
+      scroll.innerHTML = "";
+      notes.forEach((note) => {
+        scroll.appendChild(createNoteSection(note.title, note.text));
+      });
+    };
+
+    const setIdentity = (data) => {
+      if (!data) {
+        return;
+      }
+      document.querySelectorAll(".identity .label-row").forEach((row) => {
+        const key = row.querySelector("span")?.textContent.trim() || "Unknown";
+        const input = row.querySelector("input");
+        if (input && key in data) {
+          input.value = data[key] ?? "";
+        }
+      });
+    };
+
+    const getSliders = (section, selector) => {
+      const sliders = {};
+      section.querySelectorAll(selector).forEach((row) => {
+        const left = row.querySelector("span")?.textContent.trim() || "Left";
+        const spans = row.querySelectorAll("span");
+        const right = spans[1]?.textContent.trim() || "Right";
+        const input = row.querySelector("input[type=\"range\"]");
+        const key = `${left} / ${right}`;
+        sliders[key] = input ? Number(input.value) : 0;
+      });
+      return sliders;
+    };
+
+    const setSliders = (section, selector, data) => {
+      if (!data) {
+        return;
+      }
+      section.querySelectorAll(selector).forEach((row) => {
+        const spans = row.querySelectorAll("span");
+        const left = spans[0]?.textContent.trim() || "Left";
+        const right = spans[1]?.textContent.trim() || "Right";
+        const key = `${left} / ${right}`;
+        const input = row.querySelector("input[type=\"range\"]");
+        if (input && key in data) {
+          input.value = data[key];
+        }
+      });
+    };
+
+    const getChecks = (section, selector) => {
+      const result = {};
+      section.querySelectorAll(selector).forEach((label) => {
+        const text = label.textContent.trim();
+        const input = label.querySelector("input[type=\"checkbox\"]");
+        result[text] = input ? input.checked : false;
+      });
+      return result;
+    };
+
+    const setChecks = (section, selector, data) => {
+      if (!data) {
+        return;
+      }
+      section.querySelectorAll(selector).forEach((label) => {
+        const text = label.textContent.trim();
+        const input = label.querySelector("input[type=\"checkbox\"]");
+        if (input && text in data) {
+          input.checked = !!data[text];
+        }
+      });
+    };
+
+    const getState = () => {
+      const body = sectionByName("body");
+      const skills = sectionByName("skills");
+      const priorities = sectionByName("priorities");
+      const mind = sectionByName("mind");
+      const social = sectionByName("social");
+
+      return {
+        identity: getIdentity(),
+        notes: collectNotes(),
+        body: { stats: getDotRows(body) },
+        skills: { stats: getDotRows(skills) },
+        priorities: { stats: getDotRows(priorities) },
+        mind: {
+          stats: getDotRows(mind),
+          sliders: getSliders(mind, ".range-row"),
+          traits: getChecks(mind, ".traits label")
+        },
+        social: {
+          stats: getDotRows(social),
+          sliders: getSliders(social, ".social-slider"),
+          traits: getChecks(social, ".checkbox-list label")
+        }
+      };
+    };
+
+    const diffObject = (current, base) => {
+      const out = {};
+      Object.keys(current).forEach((key) => {
+        const currentValue = current[key];
+        const baseValue = base ? base[key] : undefined;
+        if (Array.isArray(currentValue)) {
+          if (JSON.stringify(currentValue) !== JSON.stringify(baseValue || [])) {
+            out[key] = currentValue;
+          }
+        } else if (currentValue && typeof currentValue === "object") {
+          const nested = diffObject(currentValue, baseValue || {});
+          if (Object.keys(nested).length) {
+            out[key] = nested;
+          }
+        } else if (currentValue !== baseValue) {
+          out[key] = currentValue;
+        }
+      });
+      return out;
+    };
+
+    const defaults = getState();
+
+    exportBtn.addEventListener("click", () => {
+      const current = getState();
+      const diff = diffObject(current, defaults);
+      const payload = {
+        version: 2,
+        ...diff
+      };
+      if (portraitData) {
+        payload.portrait = portraitData;
+      }
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "character-sheet.json";
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+
+    importBtn.addEventListener("click", () => {
+      importFile.click();
+    });
+
+    importFile.addEventListener("change", () => {
+      const file = importFile.files[0];
+      if (!file) {
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if (Array.isArray(data.fields)) {
+            const fields = Array.from(document.querySelectorAll(".frame input, .frame textarea"))
+              .filter((el) => el.type !== "file");
+            data.fields.forEach((item, index) => {
+              const el = fields[index];
+              if (!el) {
+                return;
+              }
+              if (item.t === "c") {
+                el.checked = !!item.v;
+              } else {
+                el.value = item.v ?? "";
+              }
+            });
+          } else {
+            setIdentity(data.identity);
+            if (data.notes !== undefined) {
+              setNotes(data.notes);
+            }
+            if (data.body?.stats) {
+              setDotRows(sectionByName("body"), data.body.stats);
+            }
+            if (data.skills?.stats) {
+              setDotRows(sectionByName("skills"), data.skills.stats);
+            }
+            if (data.priorities?.stats) {
+              setDotRows(sectionByName("priorities"), data.priorities.stats);
+            }
+            if (data.mind?.stats) {
+              setDotRows(sectionByName("mind"), data.mind.stats);
+            }
+            if (data.mind?.sliders) {
+              setSliders(sectionByName("mind"), ".range-row", data.mind.sliders);
+            }
+            if (data.mind?.traits) {
+              setChecks(sectionByName("mind"), ".traits label", data.mind.traits);
+            }
+            if (data.social?.stats) {
+              setDotRows(sectionByName("social"), data.social.stats);
+            }
+            if (data.social?.sliders) {
+              setSliders(sectionByName("social"), ".social-slider", data.social.sliders);
+            }
+            if (data.social?.traits) {
+              setChecks(sectionByName("social"), ".checkbox-list label", data.social.traits);
+            }
+          }
+          if (data.portrait) {
+            portraitData = data.portrait;
+            portraitPreview.src = portraitData;
+            portraitPlaceholder.style.display = "none";
+          }
+        } catch (err) {
+          console.error("Invalid import file", err);
+        }
+      };
+      reader.readAsText(file);
+      importFile.value = "";
+    });
+  </script>
+</body>
+</html>

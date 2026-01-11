@@ -1,0 +1,16 @@
+[package]
+name = "character-atelier-sheet"
+version = "0.0.0"
+description = "Character Atelier Sheet"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "1.5", features = [] }
+
+[dependencies]
+tauri = { version = "1.5", features = [ "fs-read-file", "fs-create-dir", "shell-open"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]
