@@ -1,168 +1,20 @@
 @import "@enderfall/ui/styles.css";
 
-:root {
-      --bg: #130810;
-      --bg-glow: #2a0f21;
-      --panel: #1b0b18;
-      --panel-2: #241028;
-      --ink: #f6eaf2;
-      --muted: #dbc7d7;
-      --line: #c03b84;
-      --line-strong: #e255a1;
-      --accent: #ff86c8;
-      --accent-2: #7dd6f6;
-      --shadow: rgba(0, 0, 0, 0.6);
-      --frame-bg: linear-gradient(180deg, #220b1a 0%, #12070f 100%);
-      --bio-bg: linear-gradient(180deg, #1a0b1b, #12070f 85%);
-      --section-bg: linear-gradient(180deg, rgba(35, 14, 32, 0.94), rgba(20, 9, 18, 0.95));
-      --note-bg: rgba(16, 7, 14, 0.6);
-      --portrait-bg: #131a2c;
-      --chip-bg: rgba(17, 9, 20, 0.8);
-      --placeholder-bg:
-        linear-gradient(135deg, rgba(60, 78, 108, 0.9), rgba(20, 30, 50, 0.95)),
-        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.06) 0px, rgba(255, 255, 255, 0.06) 1px, transparent 1px, transparent 8px);
-      --placeholder-ink: #dde6f2;
-      --menu-card: #1b0b18;
-      --menu-line: rgba(192, 59, 132, 0.5);
-      --menu-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
-      --menu-bg-soft: rgba(255, 134, 200, 0.12);
-      --menu-radius: 18px;
-      --menu-muted: var(--muted);
-    }
-
-    :root[data-theme="light"] {
-      --bg: #f4f1ea;
-      --bg-glow: #f7e6cf;
-      --panel: #ffffff;
-      --panel-2: #f9f6f0;
-      --ink: #1d232a;
-      --muted: #5c6670;
-      --line: rgba(24, 32, 40, 0.18);
-      --line-strong: #1f7a8c;
-      --accent: #1f7a8c;
-      --accent-2: #f29f45;
-      --shadow: rgba(23, 28, 33, 0.12);
-      --frame-bg: linear-gradient(180deg, #ffffff 0%, #f6ede1 100%);
-      --bio-bg: linear-gradient(180deg, #ffffff, #f9f6f0 85%);
-      --section-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(249, 246, 240, 0.96));
-      --note-bg: rgba(255, 255, 255, 0.8);
-      --portrait-bg: #e7ecf2;
-      --chip-bg: rgba(255, 255, 255, 0.9);
-      --placeholder-bg:
-        linear-gradient(135deg, rgba(210, 225, 245, 0.9), rgba(240, 244, 248, 0.95)),
-        repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0px, rgba(0, 0, 0, 0.04) 1px, transparent 1px, transparent 8px);
-      --placeholder-ink: #2b3440;
-      --menu-card: rgba(255, 255, 255, 0.88);
-      --menu-line: rgba(24, 32, 40, 0.12);
-      --menu-shadow: 0 16px 40px rgba(23, 28, 33, 0.12);
-      --menu-bg-soft: #f9f6f0;
-      --menu-radius: 18px;
-      --menu-muted: var(--muted);
-    }
-
-    :root[data-theme="dark"] {
-      --bg: #11161b;
-      --bg-glow: #1a2026;
-      --panel: #141a20;
-      --panel-2: #1a2026;
-      --ink: #e7edf2;
-      --muted: #98a3ad;
-      --line: rgba(255, 255, 255, 0.12);
-      --line-strong: #4fb6c9;
-      --accent: #4fb6c9;
-      --accent-2: #f1b35d;
-      --shadow: rgba(0, 0, 0, 0.65);
-      --frame-bg: linear-gradient(180deg, #151b22 0%, #0f151b 100%);
-      --bio-bg: linear-gradient(180deg, #151b22, #11161b 85%);
-      --section-bg: linear-gradient(180deg, rgba(21, 27, 34, 0.94), rgba(15, 21, 27, 0.95));
-      --note-bg: rgba(16, 20, 26, 0.7);
-      --portrait-bg: #0f1620;
-      --chip-bg: rgba(20, 26, 32, 0.8);
-      --placeholder-bg:
-        linear-gradient(135deg, rgba(30, 45, 62, 0.9), rgba(15, 22, 35, 0.95)),
-        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.06) 0px, rgba(255, 255, 255, 0.06) 1px, transparent 1px, transparent 8px);
-      --placeholder-ink: #dde6f2;
-      --menu-card: rgba(22, 27, 33, 0.92);
-      --menu-line: rgba(255, 255, 255, 0.12);
-      --menu-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
-      --menu-bg-soft: rgba(24, 30, 36, 0.92);
-      --menu-radius: 18px;
-      --menu-muted: var(--muted);
-    }
-
-    :root[data-theme="system"] {
-      --bg: #f4f1ea;
-      --bg-glow: #f7e6cf;
-      --panel: #ffffff;
-      --panel-2: #f9f6f0;
-      --ink: #1d232a;
-      --muted: #5c6670;
-      --line: rgba(24, 32, 40, 0.18);
-      --line-strong: #1f7a8c;
-      --accent: #1f7a8c;
-      --accent-2: #f29f45;
-      --shadow: rgba(23, 28, 33, 0.12);
-      --frame-bg: linear-gradient(180deg, #ffffff 0%, #f6ede1 100%);
-      --bio-bg: linear-gradient(180deg, #ffffff, #f9f6f0 85%);
-      --section-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(249, 246, 240, 0.96));
-      --note-bg: rgba(255, 255, 255, 0.8);
-      --portrait-bg: #e7ecf2;
-      --chip-bg: rgba(255, 255, 255, 0.9);
-      --placeholder-bg:
-        linear-gradient(135deg, rgba(210, 225, 245, 0.9), rgba(240, 244, 248, 0.95)),
-        repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0px, rgba(0, 0, 0, 0.04) 1px, transparent 1px, transparent 8px);
-      --placeholder-ink: #2b3440;
-      --menu-card: rgba(255, 255, 255, 0.88);
-      --menu-line: rgba(24, 32, 40, 0.12);
-      --menu-shadow: 0 16px 40px rgba(23, 28, 33, 0.12);
-      --menu-bg-soft: #f9f6f0;
-      --menu-radius: 18px;
-      --menu-muted: var(--muted);
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root[data-theme="system"] {
-        --bg: #11161b;
-        --bg-glow: #1a2026;
-        --panel: #141a20;
-        --panel-2: #1a2026;
-        --ink: #e7edf2;
-        --muted: #98a3ad;
-        --line: rgba(255, 255, 255, 0.12);
-        --line-strong: #4fb6c9;
-        --accent: #4fb6c9;
-        --accent-2: #f1b35d;
-        --shadow: rgba(0, 0, 0, 0.65);
-        --frame-bg: linear-gradient(180deg, #151b22 0%, #0f151b 100%);
-        --bio-bg: linear-gradient(180deg, #151b22, #11161b 85%);
-        --section-bg: linear-gradient(180deg, rgba(21, 27, 34, 0.94), rgba(15, 21, 27, 0.95));
-        --note-bg: rgba(16, 20, 26, 0.7);
-        --portrait-bg: #0f1620;
-        --chip-bg: rgba(20, 26, 32, 0.8);
-        --placeholder-bg:
-          linear-gradient(135deg, rgba(30, 45, 62, 0.9), rgba(15, 22, 35, 0.95)),
-          repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.06) 0px, rgba(255, 255, 255, 0.06) 1px, transparent 1px, transparent 8px);
-        --placeholder-ink: #dde6f2;
-        --menu-card: rgba(22, 27, 33, 0.92);
-        --menu-line: rgba(255, 255, 255, 0.12);
-        --menu-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
-        --menu-bg-soft: rgba(24, 30, 36, 0.92);
-        --menu-radius: 18px;
-        --menu-muted: var(--muted);
-      }
-    }
-
     * {
       box-sizing: border-box;
     }
 
     body {
       margin: 0;
+      color: var(--ink);
+      font-family: var(--font-main);
+    }
+
+    :root[data-theme="atelier"] body {
       background:
         radial-gradient(circle at 10% 20%, #35122d 0%, #140813 45%),
         radial-gradient(circle at 80% 10%, #1b163a 0%, #12070f 40%),
         #12070f;
-      color: var(--ink);
       font-family: "Spectral", "Times New Roman", serif;
     }
 
@@ -256,25 +108,19 @@
 
     :root[data-theme="light"] .core-grid,
     :root[data-theme="dark"] .core-grid,
-    :root[data-theme="system"] .core-grid {
-      gap: 16px;
-    }
-
+    :root[data-theme="system"] .core-grid,
     :root[data-theme="light"] .skill-grid,
     :root[data-theme="dark"] .skill-grid,
-    :root[data-theme="system"] .skill-grid {
-      gap: 16px;
-    }
-
+    :root[data-theme="system"] .skill-grid,
     :root[data-theme="light"] .social-content,
     :root[data-theme="dark"] .social-content,
     :root[data-theme="system"] .social-content {
-      gap: 16px;
+      gap: var(--cc-section-gap);
     }
 
-    :root[data-theme="light"] .action-btn,
-    :root[data-theme="dark"] .action-btn,
-    :root[data-theme="system"] .action-btn {
+    :root[data-theme="light"] .action-btn:not(.ef-button),
+    :root[data-theme="dark"] .action-btn:not(.ef-button),
+    :root[data-theme="system"] .action-btn:not(.ef-button) {
       border-radius: 999px;
       border-width: 1px;
     }
@@ -285,9 +131,16 @@
       font-family: "Space Grotesk", "Segoe UI", sans-serif;
     }
 
+    :root[data-theme="galaxy"] body {
+      font-family: var(--font-main);
+    }
+
     :root[data-theme="light"] .section-title,
     :root[data-theme="dark"] .section-title,
     :root[data-theme="system"] .section-title,
+    :root[data-theme="light"] .panel-title,
+    :root[data-theme="dark"] .panel-title,
+    :root[data-theme="system"] .panel-title,
     :root[data-theme="light"] .label-row span,
     :root[data-theme="dark"] .label-row span,
     :root[data-theme="system"] .label-row span,
@@ -302,39 +155,28 @@
       text-transform: none;
     }
 
-    :root[data-theme="light"] button,
-    :root[data-theme="dark"] button,
-    :root[data-theme="system"] button {
-      border: none;
-      background: #fff;
-      color: var(--ink);
-      border-radius: 999px;
-      padding: 10px 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-      box-shadow: 0 6px 16px rgba(22, 30, 40, 0.08);
+    :root[data-theme="galaxy"] .section-title,
+    :root[data-theme="galaxy"] .panel-title,
+    :root[data-theme="galaxy"] .label-row span,
+    :root[data-theme="galaxy"] .note-header,
+    :root[data-theme="galaxy"] .stat-chip,
+    :root[data-theme="galaxy"] .menu-button,
+    :root[data-theme="galaxy"] .portrait-placeholder,
+    :root[data-theme="galaxy"] .note-controls select:not(.ef-select),
+    :root[data-theme="galaxy"] .note-controls button:not(.ef-button),
+    :root[data-theme="galaxy"] .note-header button:not(.ef-button),
+    :root[data-theme="galaxy"] .action-btn:not(.ef-button) {
       font-family: inherit;
+      letter-spacing: 0;
+      text-transform: none;
     }
 
-    :root[data-theme="dark"] button {
-      background: rgba(24, 30, 36, 0.92);
-      color: var(--ink);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
-    }
-
-    :root[data-theme="light"] button:hover,
-    :root[data-theme="dark"] button:hover,
-    :root[data-theme="system"] button:hover {
-      transform: translateY(-1px);
-    }
-
-    :root[data-theme="light"] input:not([type="checkbox"]):not([type="range"]):not([type="file"]),
-    :root[data-theme="light"] select,
-    :root[data-theme="light"] textarea,
-    :root[data-theme="system"] input:not([type="checkbox"]):not([type="range"]):not([type="file"]),
-    :root[data-theme="system"] select,
-    :root[data-theme="system"] textarea {
+    :root[data-theme="light"] input:not(.ef-input):not([type="checkbox"]):not([type="range"]):not([type="file"]),
+    :root[data-theme="light"] select:not(.ef-select),
+    :root[data-theme="light"] textarea:not(.ef-textarea),
+    :root[data-theme="system"] input:not(.ef-input):not([type="checkbox"]):not([type="range"]):not([type="file"]),
+    :root[data-theme="system"] select:not(.ef-select),
+    :root[data-theme="system"] textarea:not(.ef-textarea) {
       width: 100%;
       padding: 10px 12px;
       border-radius: 12px;
@@ -345,17 +187,30 @@
       color: var(--ink);
     }
 
-    :root[data-theme="dark"] input:not([type="checkbox"]):not([type="range"]):not([type="file"]),
-    :root[data-theme="dark"] select,
-    :root[data-theme="dark"] textarea {
+    :root[data-theme="galaxy"] input:not(.ef-input):not([type="checkbox"]):not([type="range"]):not([type="file"]),
+    :root[data-theme="galaxy"] select:not(.ef-select),
+    :root[data-theme="galaxy"] textarea:not(.ef-textarea) {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      background: rgba(15, 18, 28, 0.9);
+      font-size: 0.95rem;
+      font-family: inherit;
+      color: var(--text-strong);
+    }
+
+    :root[data-theme="dark"] input:not(.ef-input):not([type="checkbox"]):not([type="range"]):not([type="file"]),
+    :root[data-theme="dark"] select:not(.ef-select),
+    :root[data-theme="dark"] textarea:not(.ef-textarea) {
       background: rgba(20, 26, 32, 0.9);
       border-color: rgba(255, 255, 255, 0.14);
       color: var(--ink);
     }
 
-    :root[data-theme="light"] .line-input,
-    :root[data-theme="dark"] .line-input,
-    :root[data-theme="system"] .line-input {
+    :root[data-theme="light"] .line-input:not(.ef-input),
+    :root[data-theme="dark"] .line-input:not(.ef-input),
+    :root[data-theme="system"] .line-input:not(.ef-input) {
       border: 1px solid rgba(24, 32, 40, 0.18);
       border-radius: 12px;
       background: rgba(255, 255, 255, 0.9);
@@ -363,55 +218,67 @@
       font-size: 0.95rem;
     }
 
-    :root[data-theme="dark"] .line-input {
+    :root[data-theme="galaxy"] .line-input:not(.ef-input) {
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      background: rgba(15, 18, 28, 0.9);
+      padding: 10px 12px;
+      font-size: 0.95rem;
+    }
+
+    :root[data-theme="dark"] .line-input:not(.ef-input) {
       background: rgba(20, 26, 32, 0.9);
       border-color: rgba(255, 255, 255, 0.14);
     }
 
-    :root[data-theme="light"] .note-controls select,
-    :root[data-theme="dark"] .note-controls select,
-    :root[data-theme="system"] .note-controls select,
-    :root[data-theme="light"] .note-controls button,
-    :root[data-theme="dark"] .note-controls button,
-    :root[data-theme="system"] .note-controls button,
-    :root[data-theme="light"] .note-header button,
-    :root[data-theme="dark"] .note-header button,
-    :root[data-theme="system"] .note-header button,
-    :root[data-theme="light"] .action-btn,
-    :root[data-theme="dark"] .action-btn,
-    :root[data-theme="system"] .action-btn,
-    :root[data-theme="light"] .upload-chip,
-    :root[data-theme="dark"] .upload-chip,
-    :root[data-theme="system"] .upload-chip {
+    :root[data-theme="light"] .note-controls select:not(.ef-select),
+    :root[data-theme="dark"] .note-controls select:not(.ef-select),
+    :root[data-theme="system"] .note-controls select:not(.ef-select),
+    :root[data-theme="atelier"] .note-controls button:not(.ef-button),
+    :root[data-theme="atelier"] .note-header button:not(.ef-button),
+    :root[data-theme="atelier"] .action-btn:not(.ef-button) {
       text-transform: none;
       letter-spacing: 0;
       font-family: inherit;
     }
 
-    :root[data-theme="light"] .note-controls select,
-    :root[data-theme="dark"] .note-controls select,
-    :root[data-theme="system"] .note-controls select {
+    :root[data-theme="light"] .note-controls select:not(.ef-select),
+    :root[data-theme="dark"] .note-controls select:not(.ef-select),
+    :root[data-theme="system"] .note-controls select:not(.ef-select) {
       background: rgba(255, 255, 255, 0.9);
       padding: 10px 12px;
       border-radius: 12px;
       border: 1px solid rgba(24, 32, 40, 0.18);
     }
 
-    :root[data-theme="dark"] .note-controls select {
+    :root[data-theme="galaxy"] .note-controls select:not(.ef-select) {
+      background: rgba(15, 18, 28, 0.9);
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      color: var(--text-strong);
+    }
+
+    :root[data-theme="dark"] .note-controls select:not(.ef-select) {
       background: rgba(20, 26, 32, 0.9);
       border-color: rgba(255, 255, 255, 0.14);
     }
 
-    :root[data-theme="light"] .note-controls select option,
-    :root[data-theme="dark"] .note-controls select option,
-    :root[data-theme="system"] .note-controls select option {
+    :root[data-theme="light"] .note-controls select:not(.ef-select) option,
+    :root[data-theme="dark"] .note-controls select:not(.ef-select) option,
+    :root[data-theme="system"] .note-controls select:not(.ef-select) option {
       background: var(--panel-2);
       color: var(--ink);
     }
 
-    :root[data-theme="light"] .note-section textarea,
-    :root[data-theme="dark"] .note-section textarea,
-    :root[data-theme="system"] .note-section textarea {
+    :root[data-theme="galaxy"] .note-controls select:not(.ef-select) option {
+      background: var(--panel-2);
+      color: var(--text-strong);
+    }
+
+    :root[data-theme="light"] .note-section textarea:not(.ef-textarea),
+    :root[data-theme="dark"] .note-section textarea:not(.ef-textarea),
+    :root[data-theme="system"] .note-section textarea:not(.ef-textarea) {
       border: 1px solid rgba(24, 32, 40, 0.12);
       border-radius: 12px;
       background: rgba(255, 255, 255, 0.75);
@@ -419,17 +286,20 @@
       font-size: 0.95rem;
     }
 
-    :root[data-theme="dark"] .note-section textarea {
+    :root[data-theme="galaxy"] .note-section textarea:not(.ef-textarea) {
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      background: rgba(12, 16, 26, 0.7);
+      padding: 10px 12px;
+      font-size: 0.95rem;
+      color: var(--text-strong);
+    }
+
+    :root[data-theme="dark"] .note-section textarea:not(.ef-textarea) {
       border-color: rgba(255, 255, 255, 0.12);
       background: rgba(20, 26, 32, 0.8);
     }
 
-    :root[data-theme="light"] .social-section,
-    :root[data-theme="dark"] .social-section,
-    :root[data-theme="system"] .social-section {
-      border-color: var(--line);
-      background: var(--section-bg);
-    }
 
     :root[data-theme="light"] .stat-chip,
     :root[data-theme="dark"] .stat-chip,
@@ -443,15 +313,14 @@
       border-color: rgba(255, 255, 255, 0.12);
     }
 
-    :root[data-theme="light"] .note-controls button,
-    :root[data-theme="dark"] .note-controls button,
-    :root[data-theme="system"] .note-controls button,
-    :root[data-theme="light"] .note-header button,
-    :root[data-theme="dark"] .note-header button,
-    :root[data-theme="system"] .note-header button,
-    :root[data-theme="light"] .upload-chip,
-    :root[data-theme="dark"] .upload-chip,
-    :root[data-theme="system"] .upload-chip {
+    :root[data-theme="galaxy"] .stat-chip {
+      background: rgba(12, 16, 26, 0.8);
+      border: 1px solid var(--card-border);
+      color: var(--text-strong);
+    }
+
+    :root[data-theme="atelier"] .note-controls button:not(.ef-button),
+    :root[data-theme="atelier"] .note-header button:not(.ef-button) {
       background: #fff;
       color: var(--ink);
       border: none;
@@ -460,16 +329,13 @@
       box-shadow: 0 6px 16px rgba(22, 30, 40, 0.08);
     }
 
-    :root[data-theme="dark"] .note-controls button,
-    :root[data-theme="dark"] .note-header button,
-    :root[data-theme="dark"] .upload-chip {
+    :root[data-theme="dark"] .note-controls button:not(.ef-button),
+    :root[data-theme="dark"] .note-header button:not(.ef-button) {
       background: rgba(24, 30, 36, 0.92);
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
     }
 
-    :root[data-theme="light"] .action-btn,
-    :root[data-theme="dark"] .action-btn,
-    :root[data-theme="system"] .action-btn {
+    :root[data-theme="atelier"] .action-btn:not(.ef-button) {
       background: #fff;
       color: var(--ink);
       border: 1px solid rgba(24, 32, 40, 0.18);
@@ -478,45 +344,43 @@
       padding: 10px 16px;
     }
 
-    :root[data-theme="dark"] .action-btn {
+    :root[data-theme="dark"] .action-btn:not(.ef-button) {
       background: rgba(24, 30, 36, 0.92);
       border-color: rgba(255, 255, 255, 0.14);
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
     }
 
-    :root[data-theme="light"] .action-btn:hover,
-    :root[data-theme="dark"] .action-btn:hover,
-    :root[data-theme="system"] .action-btn:hover {
+    :root[data-theme="atelier"] .action-btn:not(.ef-button):hover {
       border-color: rgba(31, 122, 140, 0.2);
       box-shadow: 0 6px 20px rgba(22, 30, 40, 0.12);
     }
 
     @media (prefers-color-scheme: dark) {
-      :root[data-theme="system"] button {
+      :root[data-theme="system"] button:not(.ef-button) {
         background: rgba(24, 30, 36, 0.92);
         color: var(--ink);
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
       }
 
-      :root[data-theme="system"] input:not([type="checkbox"]):not([type="range"]):not([type="file"]),
-      :root[data-theme="system"] select,
-      :root[data-theme="system"] textarea {
+      :root[data-theme="system"] input:not(.ef-input):not([type="checkbox"]):not([type="range"]):not([type="file"]),
+      :root[data-theme="system"] select:not(.ef-select),
+      :root[data-theme="system"] textarea:not(.ef-textarea) {
         background: rgba(20, 26, 32, 0.9);
         border-color: rgba(255, 255, 255, 0.14);
         color: var(--ink);
       }
 
-      :root[data-theme="system"] .line-input {
+      :root[data-theme="system"] .line-input:not(.ef-input) {
         background: rgba(20, 26, 32, 0.9);
         border-color: rgba(255, 255, 255, 0.14);
       }
 
-      :root[data-theme="system"] .note-controls select {
+      :root[data-theme="system"] .note-controls select:not(.ef-select) {
         background: rgba(20, 26, 32, 0.9);
         border-color: rgba(255, 255, 255, 0.14);
       }
 
-      :root[data-theme="system"] .note-section textarea {
+      :root[data-theme="system"] .note-section textarea:not(.ef-textarea) {
         border-color: rgba(255, 255, 255, 0.12);
         background: rgba(20, 26, 32, 0.8);
       }
@@ -526,23 +390,20 @@
         border-color: rgba(255, 255, 255, 0.12);
       }
 
-      :root[data-theme="system"] .note-controls button,
-      :root[data-theme="system"] .note-header button,
-      :root[data-theme="system"] .upload-chip {
+      :root[data-theme="system"] .note-controls button:not(.ef-button),
+      :root[data-theme="system"] .note-header button:not(.ef-button) {
         background: rgba(24, 30, 36, 0.92);
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
       }
 
-      :root[data-theme="system"] .action-btn {
+      :root[data-theme="system"] .action-btn:not(.ef-button) {
         background: rgba(24, 30, 36, 0.92);
         border-color: rgba(255, 255, 255, 0.14);
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
       }
     }
 
-    :root[data-theme="light"] .menu-button,
-    :root[data-theme="dark"] .menu-button,
-    :root[data-theme="system"] .menu-button {
+    :root[data-theme="atelier"] .menu-button {
       font-family: inherit;
       letter-spacing: 0;
       text-transform: none;
@@ -713,16 +574,19 @@
     .frame {
       max-width: 1700px;
       margin: 16px auto;
-      padding: 16px 24px 16px 16px;
-      border: 6px solid var(--line-strong);
-      box-shadow: 0 18px 50px var(--shadow);
-      background: var(--frame-bg);
       position: relative;
       overflow: hidden;
     }
 
-    .frame::before,
-    .frame::after {
+    :root[data-theme="atelier"] .frame {
+      padding: 16px 24px 16px 16px;
+      border: 6px solid var(--line-strong);
+      box-shadow: 0 18px 50px var(--shadow);
+      background: var(--frame-bg);
+    }
+
+    :root[data-theme="atelier"] .frame::before,
+    :root[data-theme="atelier"] .frame::after {
       content: "";
       position: absolute;
       width: 380px;
@@ -732,38 +596,45 @@
       z-index: 0;
     }
 
-    .frame::before {
+    :root[data-theme="atelier"] .frame::before {
       top: -120px;
       right: 10%;
     }
 
-    .frame::after {
+    :root[data-theme="atelier"] .frame::after {
       bottom: -140px;
       left: 8%;
       background: radial-gradient(circle, rgba(125, 214, 246, 0.12), transparent 70%);
     }
 
     .sheet {
+      --cc-section-gap: 12px;
+      --cc-row-gap: 12px;
       position: relative;
       z-index: 1;
       display: grid;
       grid-template-columns: 36% 64%;
       gap: 14px;
       min-height: 90vh;
+      align-items: start;
     }
 
     .left-panel {
       display: grid;
       grid-template-rows: auto 1fr;
       gap: 12px;
+      align-content: start;
     }
 
     .portrait-card {
-      border: 3px solid var(--line-strong);
-      background: var(--portrait-bg);
       position: relative;
       min-height: 360px;
       overflow: hidden;
+    }
+
+    :root[data-theme="atelier"] .portrait-card {
+      border: 3px solid var(--line-strong);
+      background: var(--portrait-bg);
     }
 
     .portrait-card::after {
@@ -798,37 +669,27 @@
       position: absolute;
       right: 14px;
       bottom: 12px;
-      padding: 8px 12px;
-      background: var(--chip-bg);
-      border: 1px solid var(--line);
-      color: var(--ink);
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      cursor: pointer;
       z-index: 2;
     }
 
-    .upload-chip input {
-      display: none;
-    }
-
     .bio-card {
-      border: 3px solid var(--line);
-      background: var(--bio-bg);
-      padding: 0;
       display: flex;
       flex-direction: column;
       min-height: 100%;
     }
 
-    .bio-card header {
-      font-family: "Cinzel", "Times New Roman", serif;
-      font-size: 18px;
-      letter-spacing: 2px;
-      padding: 10px 14px;
-      border-bottom: 2px solid var(--line);
-      background: rgba(255, 134, 200, 0.08);
+    :root[data-theme="atelier"] .bio-card {
+      border: 3px solid var(--line);
+      background: var(--bio-bg);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 40px;
+      padding: 8px 12px;
     }
 
     .notes-scroll {
@@ -836,15 +697,12 @@
       min-height: 220px;
       overflow-y: visible;
       width: 100%;
-      padding: 10px 12px 0;
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
 
     .note-section {
-      border: 2px solid var(--line);
-      background: var(--note-bg);
       padding: 8px 10px 12px;
       width: 100%;
       flex: 1;
@@ -863,7 +721,7 @@
       text-transform: uppercase;
     }
 
-    .note-header button {
+    .note-header button:not(.ef-button) {
       border: 1px solid var(--line);
       background: transparent;
       color: var(--ink);
@@ -878,11 +736,10 @@
       display: flex;
       gap: 8px;
       align-items: center;
-      padding: 10px 12px 0;
       width: 100%;
     }
 
-    .note-controls select {
+    .note-controls select:not(.ef-select) {
       flex: 1;
       background: rgba(255, 134, 200, 0.12);
       border: 1px solid var(--line);
@@ -893,12 +750,12 @@
       letter-spacing: 1px;
     }
 
-    .note-controls select option {
+    .note-controls select:not(.ef-select) option {
       background: #1a0b1b;
       color: var(--ink);
     }
 
-    .note-controls button {
+    .note-controls button:not(.ef-button) {
       border: 1px solid var(--line);
       background: rgba(255, 134, 200, 0.12);
       color: var(--ink);
@@ -910,7 +767,7 @@
       cursor: pointer;
     }
 
-    .note-section textarea {
+    .note-section textarea:not(.ef-textarea) {
       display: block;
       width: 100%;
       min-height: 70px;
@@ -927,34 +784,44 @@
 
     .right-panel {
       display: grid;
-      grid-template-rows: auto auto 1fr auto;
+      grid-template-rows: auto auto auto auto;
       gap: 12px;
+      align-content: start;
     }
 
     .section {
-      border: 3px solid var(--line);
+      --cc-section-gap: 12px;
+      --cc-row-gap: 12px;
       padding: 12px 16px;
+      display: grid;
+      gap: var(--cc-section-gap);
+      align-content: start;
+    }
+
+    :root[data-theme="atelier"] .section {
+      border: 3px solid var(--line);
       background: var(--section-bg);
     }
 
-    .section-title {
+    .section-title,
+    .panel-title {
       font-family: "Cinzel", "Times New Roman", serif;
       font-size: 20px;
+      line-height: 1;
       letter-spacing: 2px;
       text-transform: uppercase;
-      margin-bottom: 8px;
     }
 
     .identity {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 6px 18px;
+      gap: var(--cc-section-gap) 18px;
     }
 
     .label-row {
       display: grid;
       grid-template-columns: auto 1fr;
-      gap: 8px;
+      gap: var(--cc-row-gap);
       align-items: center;
     }
 
@@ -966,7 +833,7 @@
       white-space: nowrap;
     }
 
-    .line-input {
+    .line-input:not(.ef-input) {
       width: 100%;
       border: none;
       border-bottom: 2px solid var(--line);
@@ -980,19 +847,19 @@
     .stats-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: var(--cc-section-gap);
     }
 
     .mini-list {
       display: grid;
-      gap: 6px;
+      gap: var(--cc-section-gap);
     }
 
     .list-row {
       display: grid;
       grid-template-columns: auto 1fr;
       align-items: center;
-      gap: 10px;
+      gap: var(--cc-row-gap);
       font-size: 17px;
     }
 
@@ -1000,7 +867,7 @@
       display: grid;
       grid-template-columns: 180px 1fr;
       align-items: center;
-      gap: 10px;
+      gap: var(--cc-row-gap);
       font-size: 17px;
     }
 
@@ -1028,19 +895,20 @@
     .core-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: var(--cc-section-gap);
       align-items: stretch;
+      align-content: start;
     }
 
     .stacked {
       display: grid;
-      gap: 12px;
+      gap: var(--cc-section-gap);
     }
 
     .range-row {
       display: grid;
       grid-template-columns: 80px 1fr 90px;
-      gap: 10px;
+      gap: var(--cc-row-gap);
       align-items: center;
       font-size: 16px;
     }
@@ -1053,19 +921,19 @@
     .traits {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 6px 18px;
+      gap: var(--cc-section-gap) 18px;
       font-size: 16px;
     }
 
     .traits label,
     .checkbox-list label {
       display: flex;
-      gap: 8px;
+      gap: var(--cc-row-gap);
       align-items: center;
     }
 
-    .traits input,
-    .checkbox-list input {
+    .traits input[type="checkbox"],
+    .checkbox-list input[type="checkbox"] {
       width: 15px;
       height: 15px;
       accent-color: var(--accent);
@@ -1074,30 +942,27 @@
     .skill-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .social-section {
-      border: 3px solid var(--line-strong);
-      background: linear-gradient(180deg, rgba(40, 15, 34, 0.95), rgba(17, 7, 13, 0.98));
+      gap: var(--cc-section-gap);
+      align-items: start;
     }
 
     .social-content {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
-      gap: 12px;
+      gap: var(--cc-section-gap);
       align-items: start;
+      align-content: start;
     }
 
     .social-grid {
       display: grid;
-      gap: 6px;
+      gap: var(--cc-section-gap);
     }
 
     .social-slider {
       display: grid;
       grid-template-columns: 70px 1fr 90px;
-      gap: 8px;
+      gap: var(--cc-row-gap);
       align-items: center;
       font-size: 16px;
     }
@@ -1105,7 +970,7 @@
     .checkbox-list {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 6px 16px;
+      gap: var(--cc-section-gap) var(--cc-row-gap);
       font-size: 16px;
     }
 
@@ -1126,7 +991,7 @@
     }
 
 
-    .action-btn {
+    .action-btn:not(.ef-button) {
       font-family: "Cinzel", "Times New Roman", serif;
       font-size: 16px;
       letter-spacing: 2px;
@@ -1139,12 +1004,12 @@
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
     }
 
-    .action-btn:hover {
+    .action-btn:not(.ef-button):hover {
       border-color: var(--accent);
       box-shadow: 0 10px 25px rgba(255, 134, 200, 0.2);
     }
 
-    .action-btn:disabled {
+    .action-btn:not(.ef-button):disabled {
       opacity: 0.6;
       cursor: not-allowed;
       box-shadow: none;
@@ -1177,4 +1042,3 @@
         grid-template-columns: 70px 1fr 80px;
       }
     }
-

@@ -148,9 +148,9 @@ export function initSheet() {
     section.innerHTML = `
         <div class="note-header">
           <span>${title}</span>
-          <button type="button" class="remove-note">Remove</button>
+          <button type="button" class="remove-note ef-button ef-button--delete">Remove</button>
         </div>
-        <textarea aria-label="${title} notes"></textarea>
+        <textarea class="ef-textarea" aria-label="${title} notes"></textarea>
       `;
     const textarea = section.querySelector("textarea");
     if (textarea) {

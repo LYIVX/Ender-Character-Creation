@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::path::Path;
+use tauri::Manager;
 
 #[tauri::command]
 fn launch_path(path: String) -> Result<(), String> {
@@ -16,7 +17,18 @@ fn launch_path(path: String) -> Result<(), String> {
 }
 
 fn main() {
-  tauri::Builder::default()
+  let builder = tauri::Builder::default();
+  let builder = if cfg!(debug_assertions) {
+    builder
+  } else {
+    builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+      if let Some(window) = app.get_window("main") {
+        let _ = window.show();
+        let _ = window.set_focus();
+      }
+    }))
+  };
+  builder
     .invoke_handler(tauri::generate_handler![launch_path])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

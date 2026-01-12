@@ -1,13 +1,13 @@
 {
   "build": {
-    "beforeBuildCommand": "npm run build",
-    "beforeDevCommand": "npm run dev",
-    "devPath": "http://localhost:5173",
+    "beforeBuildCommand": "npm run build:web",
+    "beforeDevCommand": "npm run dev:web",
+    "devPath": "http://localhost:5174",
     "distDir": "../dist"
   },
   "package": {
     "productName": "Character Creation",
-    "version": "0.0.0"
+    "version": "0.1.0"
   },
   "tauri": {
     "allowlist": {
@@ -15,10 +15,13 @@
       "fs": {
         "readFile": true,
         "createDir": true,
-        "scope": ["$APPDATA/Enderfall/**"]
+        "scope": ["$APPDATA/Enderfall/**", "$LOCALDATA/Enderfall/**"]
       },
       "shell": {
         "open": true
+      },
+      "path": {
+        "all": true
       }
     },
     "windows": [
@@ -35,7 +38,8 @@
     "bundle": {
       "active": true,
       "identifier": "com.characteratelier.sheet",
-      "targets": "all"
+      "targets": "all",
+      "icon": ["icons/icon.ico", "icons/icon.png"]
     }
   }
 }

@@ -1,11 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { initSheet } from "./sheet";
-import { isEntitledForApp, openAppBrowser, readLaunchToken } from "@enderfall/runtime";
-import { AccessGate, applyTheme, getStoredTheme } from "@enderfall/ui";
+import { open as openExternal } from "@tauri-apps/api/shell";
+import { appWindow } from "@tauri-apps/api/window";
+import {
+  clearLaunchToken,
+  isEntitledForApp,
+  openAppBrowser,
+  readLaunchToken,
+  type LaunchToken,
+} from "@enderfall/runtime";
+import { AccessGate, Button, Dropdown, Input, MainHeader, Panel, Select, Textarea, applyTheme, getStoredTheme } from "@enderfall/ui";
 
-type ThemeMode = "atelier" | "system" | "light" | "dark";
+type ThemeMode = "galaxy" | "atelier" | "system" | "light" | "dark";
 
 const themeOptions: { value: ThemeMode; label: string }[] = [
+  { value: "galaxy", label: "Galaxy" },
   { value: "atelier", label: "Atelier" },
   { value: "system", label: "System" },
   { value: "light", label: "Light" },
@@ -34,8 +43,8 @@ export default function App() {
   const [themeMode, setThemeMode] = useState<ThemeMode>(() =>
     getStoredTheme({
       storageKey: "themeMode",
-      defaultTheme: "atelier",
-      allowed: ["atelier", "system", "light", "dark"],
+      defaultTheme: "galaxy",
+      allowed: ["galaxy", "atelier", "system", "light", "dark"],
     })
   );
   const [entitlementStatus, setEntitlementStatus] = useState<"checking" | "allowed" | "locked">(
@@ -43,6 +52,9 @@ export default function App() {
   );
   const [requestedBrowser, setRequestedBrowser] = useState(false);
   const [isPremium, setIsPremium] = useState(!isTauri);
+  const [entitlementDebug, setEntitlementDebug] = useState("");
+  const [launchToken, setLaunchToken] = useState<LaunchToken | null>(null);
+  const portraitInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     return initSheet();
@@ -51,9 +63,10 @@ export default function App() {
   useEffect(() => {
     applyTheme(themeMode, {
       storageKey: "themeMode",
-      defaultTheme: "atelier",
-      allowed: ["atelier", "system", "light", "dark"],
+      defaultTheme: "galaxy",
+      allowed: ["galaxy", "atelier", "system", "light", "dark"],
     });
+    document.body.classList.toggle("ef-galaxy", themeMode === "galaxy");
   }, [themeMode]);
 
   useEffect(() => {
@@ -69,9 +82,17 @@ export default function App() {
       return;
     }
     const token = await readLaunchToken(appId);
+    console.log("[Character Creation] launch token", token);
+    setLaunchToken(token);
     const allowed = isEntitledForApp(token, appId);
     setEntitlementStatus(allowed ? "allowed" : "locked");
     setIsPremium(allowed);
+    const now = Date.now();
+    const expires = token?.expiresAt ?? 0;
+    const debug = token
+      ? `token ${token.appId} exp ${new Date(expires).toLocaleString()} (${expires - now}ms)`
+      : "no token found";
+    setEntitlementDebug(debug);
   };
 
   useEffect(() => {
@@ -125,80 +146,109 @@ export default function App() {
     setMenuOpen(null);
   };
 
+  const displayName =
+    launchToken?.displayName || launchToken?.email?.split("@")[0] || "Account";
+  const rawAvatarUrl = launchToken?.avatarUrl ?? null;
+  const avatarUrl =
+    rawAvatarUrl && !rawAvatarUrl.includes("googleusercontent.com") ? rawAvatarUrl : null;
+
+  const openProfile = () => {
+    const url = "https://enderfall.co.uk/profile";
+    if (isTauri) {
+      openExternal(url);
+    } else {
+      window.open(url, "_blank", "noopener");
+    }
+  };
+
+  const focusSelf = async () => {
+    if (!isTauri) return;
+    await appWindow.show();
+    await appWindow.setFocus();
+  };
+
+  const handleLogout = async () => {
+    await clearLaunchToken(appId);
+    setLaunchToken(null);
+    setEntitlementStatus("locked");
+    setIsPremium(false);
+    setEntitlementDebug("logged out");
+    await openAppBrowser(appId);
+  };
+
   return (
-    <>
+    <div className="page">
       <AccessGate
         status={entitlementStatus}
-        primaryLabel="Open App Browser"
+        primaryLabel="Open Enderfall Hub"
         secondaryLabel="Retry"
         onPrimary={() => openAppBrowser(appId)}
         onSecondary={refreshEntitlement}
         primaryClassName="action-btn"
         secondaryClassName="action-btn"
+        messageLocked={`Open Enderfall Hub to verify premium or admin access. (${entitlementDebug})`}
       />
-      <div className="menu-bar">
-        <div className="menu-group" onMouseEnter={() => openMenu("file")} onMouseLeave={closeMenu}>
-          <button className="menu-button" type="button">
-            File
-          </button>
-          {menuOpen === "file" ? (
-            <div className="menu-popover" onMouseEnter={() => openMenu("file")} onMouseLeave={closeMenu}>
-              <button
-                className="menu-item"
-                type="button"
-                onClick={triggerImport}
-                disabled={!isPremium}
-                title={!isPremium ? "Premium required" : undefined}
-              >
-                Import...
-              </button>
-              <button
-                className="menu-item"
-                type="button"
-                onClick={triggerExport}
-                disabled={!isPremium}
-                title={!isPremium ? "Premium required" : undefined}
-              >
-                Export...
-              </button>
-              <div className="menu-divider" />
-              <button className="menu-item" type="button" onClick={startNewSheet}>
-                New sheet
-              </button>
-            </div>
-          ) : null}
-        </div>
-        <div className="menu-group" onMouseEnter={() => openMenu("edit")} onMouseLeave={closeMenu}>
-          <button className="menu-button" type="button">
-            Edit
-          </button>
-          {menuOpen === "edit" ? (
-            <div className="menu-popover" onMouseEnter={() => openMenu("edit")} onMouseLeave={closeMenu}>
-              <button className="menu-item" type="button" disabled>
-                Undo
-              </button>
-              <button className="menu-item" type="button" disabled>
-                Redo
-              </button>
-            </div>
-          ) : null}
-        </div>
-        <div className="menu-group" onMouseEnter={() => openMenu("view")} onMouseLeave={closeMenu}>
-          <button className="menu-button" type="button">
-            View
-          </button>
-          {menuOpen === "view" ? (
-            <div className="menu-popover" onMouseEnter={() => openMenu("view")} onMouseLeave={closeMenu}>
-              <div className="menu-item has-submenu" role="button" tabIndex={0}>
+      <MainHeader
+        logoSrc="/brand/enderfall-mark.png"
+        menus={[
+          {
+            id: "file",
+            label: "File",
+            content: (
+              <>
+                <button
+                  className="ef-menu-item"
+                  type="button"
+                  onClick={triggerImport}
+                  disabled={!isPremium}
+                  title={!isPremium ? "Premium required" : undefined}
+                >
+                  Import...
+                </button>
+                <button
+                  className="ef-menu-item"
+                  type="button"
+                  onClick={triggerExport}
+                  disabled={!isPremium}
+                  title={!isPremium ? "Premium required" : undefined}
+                >
+                  Export...
+                </button>
+                <div className="ef-menu-divider" />
+                <button className="ef-menu-item" type="button" onClick={startNewSheet}>
+                  New sheet
+                </button>
+              </>
+            ),
+          },
+          {
+            id: "edit",
+            label: "Edit",
+            content: (
+              <>
+                <button className="ef-menu-item" type="button" disabled>
+                  Undo
+                </button>
+                <button className="ef-menu-item" type="button" disabled>
+                  Redo
+                </button>
+              </>
+            ),
+          },
+          {
+            id: "view",
+            label: "View",
+            content: (
+              <div className="ef-menu-item has-submenu" role="button" tabIndex={0}>
                 <span>Theme</span>
-                <span className="menu-sub-caret">
+                <span className="ef-menu-sub-caret">
                   <IconChevronDown />
                 </span>
-                <div className="menu-sub">
+                <div className="ef-menu-sub">
                   {themeOptions.map((item) => (
                     <button
                       key={item.value}
-                      className="menu-item"
+                      className="ef-menu-item"
                       type="button"
                       onClick={() => {
                         setThemeMode(item.value);
@@ -210,118 +260,171 @@ export default function App() {
                   ))}
                 </div>
               </div>
-            </div>
-          ) : null}
-        </div>
-        <div className="menu-group" onMouseEnter={() => openMenu("help")} onMouseLeave={closeMenu}>
-          <button className="menu-button" type="button">
-            Help
-          </button>
-          {menuOpen === "help" ? (
-            <div className="menu-popover" onMouseEnter={() => openMenu("help")} onMouseLeave={closeMenu}>
-              <button className="menu-item" type="button" onClick={openAbout}>
+            ),
+          },
+          {
+            id: "help",
+            label: "Help",
+            content: (
+              <button className="ef-menu-item" type="button" onClick={openAbout}>
                 About
               </button>
-            </div>
-          ) : null}
-        </div>
-        <div className={`tier-pill ${isPremium ? "premium" : "free"}`}>
-          {isPremium ? "Premium" : "Free"}
-        </div>
-      </div>
+            ),
+          },
+        ]}
+        menuOpen={menuOpen}
+        onOpenMenu={openMenu}
+        onCloseMenu={closeMenu}
+        actions={
+          <div className="actions">
+            <Dropdown
+              variant="user"
+              name={displayName}
+              avatarUrl={avatarUrl}
+              avatarFallback={displayName.slice(0, 1).toUpperCase()}
+              items={[
+                {
+                  label: "Open Character Creation",
+                  onClick: focusSelf,
+                },
+                {
+                  label: "Open Enderfall Hub",
+                  onClick: () => openAppBrowser(appId),
+                },
+                {
+                  label: "Profile",
+                  onClick: openProfile,
+                },
+                {
+                  label: "Logout",
+                  onClick: handleLogout,
+                },
+              ]}
+            />
+          </div>
+        }
+      />
       {!isPremium ? (
         <div className="premium-banner">
           Free mode active. Import and export unlock with premium access.
         </div>
       ) : null}
-      <div className="frame">
+      <Panel variant="card" borderWidth={2} className="frame">
           <div className="sheet">
             <div className="left-panel fade-in">
-              <div className="portrait-card">
+              <Panel variant="card" borderWidth={2} className="portrait-card">
                 <img className="portrait" id="portraitPreview" alt="portrait preview" />
                 <div className="portrait-placeholder" id="portraitPlaceholder">Upload Portrait</div>
-                <label className="upload-chip">
+                <Button
+                  type="button"
+                  className="upload-chip"
+                  onClick={() => portraitInputRef.current?.click()}
+                >
                   Upload
-                  <input type="file" id="portraitInput" accept="image/*" />
-                </label>
-              </div>
-              <div className="bio-card">
-                <header>Character Notes</header>
+                </Button>
+                <input
+                  ref={portraitInputRef}
+                  type="file"
+                  id="portraitInput"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                />
+              </Panel>
+              <Panel variant="card" borderWidth={2} className="bio-card">
+                <Panel variant="highlight" borderWidth={1} className="panel-header">
+                  <span className="panel-title">Character Notes</span>
+                </Panel>
                 <div className="note-controls">
-                  <select id="noteSelect">
+                  <Select id="noteSelect">
                     <option value="Personality">Personality</option>
                     <option value="Hobbies">Hobbies</option>
                     <option value="Food-Related">Food-Related</option>
                     <option value="Habits">Habits</option>
                     <option value="Quirks">Quirks</option>
                     <option value="Extras">Extras</option>
-                  </select>
-                  <button type="button" id="addNoteBtn">Add</button>
+                  </Select>
+                  <Button type="button" id="addNoteBtn">Add</Button>
                 </div>
                 <div className="notes-scroll" id="notesScroll">
-                  <div className="note-section" data-note-title="Personality">
+                  <Panel variant="card" borderWidth={1} className="note-section" data-note-title="Personality">
                     <div className="note-header">
                       <span>Personality</span>
-                      <button type="button" className="remove-note">Remove</button>
+                      <Button type="button" variant="delete" className="remove-note">
+                        Remove
+                      </Button>
                     </div>
-                    <textarea aria-label="Personality notes"></textarea>
-                  </div>
-                  <div className="note-section" data-note-title="Hobbies">
+                    <Textarea aria-label="Personality notes" />
+                  </Panel>
+                  <Panel variant="card" borderWidth={1} className="note-section" data-note-title="Hobbies">
                     <div className="note-header">
                       <span>Hobbies</span>
-                      <button type="button" className="remove-note">Remove</button>
+                      <Button type="button" variant="delete" className="remove-note">
+                        Remove
+                      </Button>
                     </div>
-                    <textarea aria-label="Hobbies notes"></textarea>
-                  </div>
-                  <div className="note-section" data-note-title="Food-Related">
+                    <Textarea aria-label="Hobbies notes" />
+                  </Panel>
+                  <Panel variant="card" borderWidth={1} className="note-section" data-note-title="Food-Related">
                     <div className="note-header">
                       <span>Food-Related</span>
-                      <button type="button" className="remove-note">Remove</button>
+                      <Button type="button" variant="delete" className="remove-note">
+                        Remove
+                      </Button>
                     </div>
-                    <textarea aria-label="Food related notes"></textarea>
-                  </div>
-                  <div className="note-section" data-note-title="Habits">
+                    <Textarea aria-label="Food related notes" />
+                  </Panel>
+                  <Panel variant="card" borderWidth={1} className="note-section" data-note-title="Habits">
                     <div className="note-header">
                       <span>Habits</span>
-                      <button type="button" className="remove-note">Remove</button>
+                      <Button type="button" variant="delete" className="remove-note">
+                        Remove
+                      </Button>
                     </div>
-                    <textarea aria-label="Habits notes"></textarea>
-                  </div>
-                  <div className="note-section" data-note-title="Quirks">
+                    <Textarea aria-label="Habits notes" />
+                  </Panel>
+                  <Panel variant="card" borderWidth={1} className="note-section" data-note-title="Quirks">
                     <div className="note-header">
                       <span>Quirks</span>
-                      <button type="button" className="remove-note">Remove</button>
+                      <Button type="button" variant="delete" className="remove-note">
+                        Remove
+                      </Button>
                     </div>
-                    <textarea aria-label="Quirks notes"></textarea>
-                  </div>
-                  <div className="note-section" data-note-title="Extras">
+                    <Textarea aria-label="Quirks notes" />
+                  </Panel>
+                  <Panel variant="card" borderWidth={1} className="note-section" data-note-title="Extras">
                     <div className="note-header">
                       <span>Extras</span>
-                      <button type="button" className="remove-note">Remove</button>
+                      <Button type="button" variant="delete" className="remove-note">
+                        Remove
+                      </Button>
                     </div>
-                    <textarea aria-label="Extras notes"></textarea>
-                  </div>
+                    <Textarea aria-label="Extras notes" />
+                  </Panel>
                 </div>
-              </div>
+              </Panel>
             </div>
       
             <div className="right-panel fade-in">
-              <section className="section" data-section="identity">
-                <div className="section-title">Identity</div>
+              <Panel variant="card" borderWidth={2} className="section" data-section="identity">
+                <Panel variant="highlight" borderWidth={1} className="panel-header">
+                  <span className="panel-title">Identity</span>
+                </Panel>
                 <div className="identity">
-                  <div className="label-row"><span>Name</span><input className="line-input" type="text" defaultValue="Jane Doe" /></div>
-                  <div className="label-row"><span>Nickname</span><input className="line-input" type="text" defaultValue="Unknown" /></div>
-                  <div className="label-row"><span>Race/Species</span><input className="line-input" type="text" defaultValue="Unknown" /></div>
-                  <div className="label-row"><span>Age</span><input className="line-input" type="text" defaultValue="XX" /></div>
-                  <div className="label-row"><span>Gender</span><input className="line-input" type="text" defaultValue="Unknown" /></div>
-                  <div className="label-row"><span>Birthday</span><input className="line-input" type="text" defaultValue="Unknown" /></div>
-                  <div className="label-row"><span>Class/Job</span><input className="line-input" type="text" defaultValue="Unknown" /></div>
-                  <div className="label-row"><span>Height</span><input className="line-input" type="text" defaultValue="XXX cm" /></div>
+                  <div className="label-row"><span>Name</span><Input className="line-input" type="text" defaultValue="Jane Doe" /></div>
+                  <div className="label-row"><span>Nickname</span><Input className="line-input" type="text" defaultValue="Unknown" /></div>
+                  <div className="label-row"><span>Race/Species</span><Input className="line-input" type="text" defaultValue="Unknown" /></div>
+                  <div className="label-row"><span>Age</span><Input className="line-input" type="text" defaultValue="XX" /></div>
+                  <div className="label-row"><span>Gender</span><Input className="line-input" type="text" defaultValue="Unknown" /></div>
+                  <div className="label-row"><span>Birthday</span><Input className="line-input" type="text" defaultValue="Unknown" /></div>
+                  <div className="label-row"><span>Class/Job</span><Input className="line-input" type="text" defaultValue="Unknown" /></div>
+                  <div className="label-row"><span>Height</span><Input className="line-input" type="text" defaultValue="XXX cm" /></div>
                 </div>
-              </section>
+              </Panel>
       
-              <section className="section" data-section="body">
-                <div className="section-title">Body</div>
+              <Panel variant="card" borderWidth={2} className="section" data-section="body">
+                <Panel variant="highlight" borderWidth={1} className="panel-header">
+                  <span className="panel-title">Body</span>
+                </Panel>
                 <div className="stats-grid">
                   <div className="mini-list">
                     <div className="dot-row"><span className="stat-chip">Strength</span><div className="dots"><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /></div></div>
@@ -334,11 +437,13 @@ export default function App() {
                     <div className="dot-row"><span className="stat-chip">Style</span><div className="dots"><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /></div></div>
                   </div>
                 </div>
-              </section>
+              </Panel>
       
               <div className="core-grid">
-                <section className="section" data-section="skills">
-                  <div className="section-title">Skills</div>
+                <Panel variant="card" borderWidth={2} className="section" data-section="skills">
+                  <Panel variant="highlight" borderWidth={1} className="panel-header">
+                    <span className="panel-title">Skills</span>
+                  </Panel>
                   <div className="skill-grid">
                     <div className="mini-list">
                       <div className="dot-row"><span className="stat-chip">Perception</span><div className="dots"><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /></div></div>
@@ -360,10 +465,12 @@ export default function App() {
                       <div className="dot-row"><span className="stat-chip">Child Handling</span><div className="dots"><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /></div></div>
                     </div>
                   </div>
-                </section>
+                </Panel>
       
-                <section className="section" data-section="priorities">
-                  <div className="section-title">Priorities</div>
+                <Panel variant="card" borderWidth={2} className="section" data-section="priorities">
+                  <Panel variant="highlight" borderWidth={1} className="panel-header">
+                    <span className="panel-title">Priorities</span>
+                  </Panel>
                   <div className="mini-list">
                     <div className="dot-row"><span className="stat-chip">Justice</span><div className="dots"><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /></div></div>
                     <div className="dot-row"><span className="stat-chip">Truth</span><div className="dots"><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /></div></div>
@@ -377,11 +484,13 @@ export default function App() {
                     <div className="dot-row"><span className="stat-chip">Health</span><div className="dots"><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /></div></div>
                     <div className="dot-row"><span className="stat-chip">Approval</span><div className="dots"><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /></div></div>
                   </div>
-                </section>
+                </Panel>
               </div>
       
-              <section className="section" data-section="mind">
-                <div className="section-title">Mind</div>
+              <Panel variant="card" borderWidth={2} className="section" data-section="mind">
+                <Panel variant="highlight" borderWidth={1} className="panel-header">
+                  <span className="panel-title">Mind</span>
+                </Panel>
                 <div className="stats-grid">
                   <div className="mini-list">
                     <div className="dot-row"><span className="stat-chip">Intelligence</span><div className="dots"><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /></div></div>
@@ -396,7 +505,7 @@ export default function App() {
                     <div className="dot-row"><span className="stat-chip">Passion</span><div className="dots"><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /></div></div>
                   </div>
                 </div>
-                <div className="stacked" style={{ marginTop: "10px" }}>
+                <div className="stacked">
                   <div className="range-row"><span>Nice</span><input type="range" min="0" max="100" defaultValue="45" /><span>Mean</span></div>
                   <div className="range-row"><span>Brave</span><input type="range" min="0" max="100" defaultValue="50" /><span>Cowardly</span></div>
                   <div className="range-row"><span>Pacifist</span><input type="range" min="0" max="100" defaultValue="55" /><span>Violent</span></div>
@@ -407,7 +516,7 @@ export default function App() {
                   <div className="range-row"><span>Extrovert</span><input type="range" min="0" max="100" defaultValue="55" /><span>Introvert</span></div>
                   <div className="range-row"><span>Collected</span><input type="range" min="0" max="100" defaultValue="50" /><span>Wild</span></div>
                 </div>
-                <div className="traits" style={{ marginTop: "10px" }}>
+                <div className="traits">
                   <label><input type="checkbox" />Ambitious</label>
                   <label><input type="checkbox" />Possessive</label>
                   <label><input type="checkbox" />Stubborn</label>
@@ -415,10 +524,12 @@ export default function App() {
                   <label><input type="checkbox" />Decisive</label>
                   <label><input type="checkbox" />Perfectionist</label>
                 </div>
-              </section>
+              </Panel>
       
-              <section className="section social-section" data-section="social">
-                <div className="section-title">Social</div>
+              <Panel variant="card" borderWidth={2} className="section" data-section="social">
+                <Panel variant="highlight" borderWidth={1} className="panel-header">
+                  <span className="panel-title">Social</span>
+                </Panel>
                 <div className="social-content">
                   <div>
                     <div className="dot-row"><span className="stat-chip">Charisma</span><div className="dots"><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /></div></div>
@@ -445,10 +556,10 @@ export default function App() {
                     <label><input type="checkbox" />Scary</label>
                   </div>
                 </div>
-              </section>
+              </Panel>
             </div>
           </div>
-        </div>
+        </Panel>
       
       <div>
           <button
@@ -473,6 +584,7 @@ export default function App() {
         </div>
       
       
-    </>
+    </div>
   );
 }
+
