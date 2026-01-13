@@ -1,24 +1,26 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { initSheet } from "./sheet";
 import { open as openExternal } from "@tauri-apps/api/shell";
-import { appWindow } from "@tauri-apps/api/window";
+import { convertFileSrc } from "@tauri-apps/api/tauri";
 import {
-  clearLaunchToken,
   isEntitledForApp,
   openAppBrowser,
-  readLaunchToken,
+  readSharedPreferences,
+  refreshLaunchToken,
+  writeSharedPreferences,
   type LaunchToken,
 } from "@enderfall/runtime";
-import { AccessGate, Button, Dropdown, Input, MainHeader, Panel, Select, Textarea, applyTheme, getStoredTheme } from "@enderfall/ui";
+import { AccessGate, Button, Dropdown, Input, MainHeader, Panel, PreferencesModal, Select, Slider, Textarea, Toggle, applyTheme, getStoredTheme } from "@enderfall/ui";
 
-type ThemeMode = "galaxy" | "atelier" | "system" | "light" | "dark";
+type ThemeMode = "galaxy" | "atelier" | "system" | "light" | "plain-light" | "plain-dark";
 
 const themeOptions: { value: ThemeMode; label: string }[] = [
-  { value: "galaxy", label: "Galaxy" },
+  { value: "system", label: "System (Default)" },
+  { value: "galaxy", label: "Galaxy (Dark)" },
   { value: "atelier", label: "Atelier" },
-  { value: "system", label: "System" },
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
+  { value: "light", label: "Galaxy (Light)" },
+  { value: "plain-light", label: "Plain Light" },
+  { value: "plain-dark", label: "Plain Dark" },
 ];
 
 const isTauri = typeof window !== "undefined" && "__TAURI_IPC__" in window;
@@ -37,16 +39,36 @@ const IconChevronDown = () => (
   </svg>
 );
 
+const noteOptions = [
+  "Personality",
+  "Hobbies",
+  "Food-Related",
+  "Habits",
+  "Quirks",
+  "Extras",
+];
+
 export default function App() {
   const [menuOpen, setMenuOpen] = useState<"file" | "edit" | "view" | "help" | null>(null);
   const menuCloseRef = useRef<number | null>(null);
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [themeMode, setThemeMode] = useState<ThemeMode>(() =>
     getStoredTheme({
       storageKey: "themeMode",
-      defaultTheme: "galaxy",
-      allowed: ["galaxy", "atelier", "system", "light", "dark"],
+      defaultTheme: "system",
+      allowed: ["galaxy", "atelier", "system", "light", "plain-light", "plain-dark"],
     })
   );
+  const [animationsEnabled, setAnimationsEnabled] = useState(true);
+  const sharedThemeUpdatedAtRef = useRef<number>(0);
+  const sharedThemeApplyRef = useRef<ThemeMode | null>(null);
+  const sharedAnimationsApplyRef = useRef<boolean | null>(null);
+  const sharedThemeAllowed = useMemo(
+    () => new Set<ThemeMode>(["system", "galaxy", "light", "plain-light", "plain-dark"]),
+    []
+  );
+  const [noteSelectValue, setNoteSelectValue] = useState(noteOptions[0]);
+  const isSharedTheme = (mode: ThemeMode) => mode !== "atelier";
   const [entitlementStatus, setEntitlementStatus] = useState<"checking" | "allowed" | "locked">(
     isTauri ? "checking" : "allowed"
   );
@@ -61,13 +83,129 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    applyTheme(themeMode, {
-      storageKey: "themeMode",
-      defaultTheme: "galaxy",
-      allowed: ["galaxy", "atelier", "system", "light", "dark"],
-    });
-    document.body.classList.toggle("ef-galaxy", themeMode === "galaxy");
+    if (!isTauri) return;
+    let active = true;
+    readSharedPreferences()
+      .then((prefs) => {
+        if (!active || !prefs) return;
+        const updatedAt = prefs.updatedAt ?? 0;
+        sharedThemeUpdatedAtRef.current = updatedAt;
+        if (prefs.themeMode && isSharedTheme(themeMode)) {
+          const nextTheme = prefs.themeMode as ThemeMode;
+          if (sharedThemeAllowed.has(nextTheme) && nextTheme !== themeMode) {
+            sharedThemeApplyRef.current = nextTheme;
+            setThemeMode(nextTheme);
+          }
+        }
+        if (typeof prefs.animationsEnabled === "boolean") {
+          if (prefs.animationsEnabled !== animationsEnabled) {
+            sharedAnimationsApplyRef.current = prefs.animationsEnabled;
+            setAnimationsEnabled(prefs.animationsEnabled);
+          }
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const applyResolvedTheme = () => {
+      const resolvedTheme =
+        themeMode === "system" ? (media.matches ? "galaxy" : "light") : themeMode;
+      const isGalaxy = resolvedTheme === "galaxy";
+      const isLight = resolvedTheme === "light";
+      document.documentElement.setAttribute("data-theme", resolvedTheme);
+      document.body.classList.toggle("ef-galaxy", isGalaxy);
+      document.body.classList.toggle("ef-galaxy-light", isLight);
+    };
+    if (themeMode === "system") {
+      localStorage.setItem("themeMode", "system");
+    } else {
+      applyTheme(themeMode, {
+        storageKey: "themeMode",
+        defaultTheme: "system",
+        allowed: ["galaxy", "atelier", "system", "light", "plain-light", "plain-dark"],
+      });
+    }
+    applyResolvedTheme();
+    if (themeMode !== "system") return;
+    const handler = () => applyResolvedTheme();
+    if ("addEventListener" in media) {
+      media.addEventListener("change", handler);
+      return () => media.removeEventListener("change", handler);
+    }
+    media.addListener(handler);
+    return () => media.removeListener(handler);
   }, [themeMode]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    document.documentElement.setAttribute(
+      "data-reduce-motion",
+      animationsEnabled ? "false" : "true"
+    );
+  }, [animationsEnabled]);
+
+  useEffect(() => {
+    if (!isTauri) return;
+    if (sharedThemeApplyRef.current === themeMode) {
+      sharedThemeApplyRef.current = null;
+      return;
+    }
+    if (!isSharedTheme(themeMode)) return;
+    if (!sharedThemeAllowed.has(themeMode)) return;
+    writeSharedPreferences({ themeMode })
+      .then((prefs) => {
+        if (prefs?.updatedAt) sharedThemeUpdatedAtRef.current = prefs.updatedAt;
+      })
+      .catch(() => undefined);
+  }, [themeMode, sharedThemeAllowed]);
+
+  useEffect(() => {
+    if (!isTauri) return;
+    if (sharedAnimationsApplyRef.current === animationsEnabled) {
+      sharedAnimationsApplyRef.current = null;
+      return;
+    }
+    writeSharedPreferences({ animationsEnabled })
+      .then((prefs) => {
+        if (prefs?.updatedAt) sharedThemeUpdatedAtRef.current = prefs.updatedAt;
+      })
+      .catch(() => undefined);
+  }, [animationsEnabled]);
+
+  useEffect(() => {
+    if (!isTauri) return;
+    const interval = window.setInterval(async () => {
+      try {
+        const prefs = await readSharedPreferences();
+        if (!prefs) return;
+        const updatedAt = prefs.updatedAt ?? 0;
+        if (updatedAt <= sharedThemeUpdatedAtRef.current) return;
+        sharedThemeUpdatedAtRef.current = updatedAt;
+        if (prefs.themeMode && isSharedTheme(themeMode)) {
+          const nextTheme = prefs.themeMode as ThemeMode;
+          if (sharedThemeAllowed.has(nextTheme) && nextTheme !== themeMode) {
+            sharedThemeApplyRef.current = nextTheme;
+            setThemeMode(nextTheme);
+          }
+        }
+        if (typeof prefs.animationsEnabled === "boolean") {
+          if (prefs.animationsEnabled !== animationsEnabled) {
+            sharedAnimationsApplyRef.current = prefs.animationsEnabled;
+            setAnimationsEnabled(prefs.animationsEnabled);
+          }
+        }
+      } catch {
+        // ignore poll failures
+      }
+    }, 3000);
+    return () => window.clearInterval(interval);
+  }, [themeMode, sharedThemeAllowed]);
 
   useEffect(() => {
     if (isTauri) return;
@@ -81,7 +219,7 @@ export default function App() {
       setIsPremium(true);
       return;
     }
-    const token = await readLaunchToken(appId);
+    const token = await refreshLaunchToken(appId);
     console.log("[Character Creation] launch token", token);
     setLaunchToken(token);
     const allowed = isEntitledForApp(token, appId);
@@ -98,6 +236,14 @@ export default function App() {
   useEffect(() => {
     refreshEntitlement();
   }, []);
+
+  useEffect(() => {
+    if (!isTauri) return;
+    const interval = window.setInterval(() => {
+      refreshEntitlement();
+    }, 5 * 60 * 1000);
+    return () => window.clearInterval(interval);
+  }, [isTauri]);
 
   useEffect(() => {
     if (entitlementStatus !== "locked" || requestedBrowser) return;
@@ -121,6 +267,11 @@ export default function App() {
       setMenuOpen(null);
       menuCloseRef.current = null;
     }, 150);
+  };
+
+  const openPreferences = () => {
+    setPreferencesOpen(true);
+    setMenuOpen(null);
   };
 
   const triggerImport = () => {
@@ -149,8 +300,16 @@ export default function App() {
   const displayName =
     launchToken?.displayName || launchToken?.email?.split("@")[0] || "Account";
   const rawAvatarUrl = launchToken?.avatarUrl ?? null;
+  const normalizedAvatarPath = launchToken?.avatarPath
+    ? launchToken.avatarPath.replace(/\\/g, "/")
+    : null;
+  const canUseLocalAvatar =
+    isTauri &&
+    typeof window !== "undefined" &&
+    (window.location.protocol === "tauri:" || window.location.hostname === "tauri.localhost");
   const avatarUrl =
-    rawAvatarUrl && !rawAvatarUrl.includes("googleusercontent.com") ? rawAvatarUrl : null;
+    canUseLocalAvatar && normalizedAvatarPath ? convertFileSrc(normalizedAvatarPath) : rawAvatarUrl;
+  const avatarUrlFallback = canUseLocalAvatar && normalizedAvatarPath ? rawAvatarUrl : null;
 
   const openProfile = () => {
     const url = "https://enderfall.co.uk/profile";
@@ -159,21 +318,6 @@ export default function App() {
     } else {
       window.open(url, "_blank", "noopener");
     }
-  };
-
-  const focusSelf = async () => {
-    if (!isTauri) return;
-    await appWindow.show();
-    await appWindow.setFocus();
-  };
-
-  const handleLogout = async () => {
-    await clearLaunchToken(appId);
-    setLaunchToken(null);
-    setEntitlementStatus("locked");
-    setIsPremium(false);
-    setEntitlementDebug("logged out");
-    await openAppBrowser(appId);
   };
 
   return (
@@ -217,6 +361,9 @@ export default function App() {
                 <div className="ef-menu-divider" />
                 <button className="ef-menu-item" type="button" onClick={startNewSheet}>
                   New sheet
+                </button>
+                <button className="ef-menu-item" type="button" onClick={openPreferences}>
+                  Preferences
                 </button>
               </>
             ),
@@ -277,29 +424,23 @@ export default function App() {
         onCloseMenu={closeMenu}
         actions={
           <div className="actions">
-            <Dropdown
-              variant="user"
-              name={displayName}
-              avatarUrl={avatarUrl}
-              avatarFallback={displayName.slice(0, 1).toUpperCase()}
-              items={[
-                {
-                  label: "Open Character Creation",
-                  onClick: focusSelf,
-                },
-                {
-                  label: "Open Enderfall Hub",
-                  onClick: () => openAppBrowser(appId),
-                },
-                {
-                  label: "Profile",
-                  onClick: openProfile,
-                },
-                {
-                  label: "Logout",
-                  onClick: handleLogout,
-                },
-              ]}
+              <Dropdown
+                variant="user"
+                name={displayName}
+                avatarUrl={avatarUrl}
+                avatarUrlFallback={avatarUrlFallback}
+                avatarFallback={displayName.slice(0, 1).toUpperCase()}
+                items={[
+                  {
+                    label: "Open Enderfall Hub",
+                    onClick: () => openAppBrowser(appId),
+                    title: "Focuses Enderfall Hub if it's already open.",
+                  },
+                  {
+                    label: "Profile",
+                    onClick: openProfile,
+                  },
+                ]}
             />
           </div>
         }
@@ -335,13 +476,31 @@ export default function App() {
                   <span className="panel-title">Character Notes</span>
                 </Panel>
                 <div className="note-controls">
-                  <Select id="noteSelect">
-                    <option value="Personality">Personality</option>
-                    <option value="Hobbies">Hobbies</option>
-                    <option value="Food-Related">Food-Related</option>
-                    <option value="Habits">Habits</option>
-                    <option value="Quirks">Quirks</option>
-                    <option value="Extras">Extras</option>
+                  <Dropdown
+                    variant="bookmark"
+                    layout="field"
+                    value={noteSelectValue}
+                    onChange={(value) => setNoteSelectValue(String(value))}
+                    sections={[
+                      {
+                        options: noteOptions.map((option) => ({
+                          value: option,
+                          label: option,
+                        })),
+                      },
+                    ]}
+                  />
+                  <Select
+                    id="noteSelect"
+                    className="note-select-hidden"
+                    value={noteSelectValue}
+                    onChange={(event) => setNoteSelectValue(event.target.value)}
+                  >
+                    {noteOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
                   </Select>
                   <Button type="button" id="addNoteBtn">Add</Button>
                 </div>
@@ -506,23 +665,23 @@ export default function App() {
                   </div>
                 </div>
                 <div className="stacked">
-                  <div className="range-row"><span>Nice</span><input type="range" min="0" max="100" defaultValue="45" /><span>Mean</span></div>
-                  <div className="range-row"><span>Brave</span><input type="range" min="0" max="100" defaultValue="50" /><span>Cowardly</span></div>
-                  <div className="range-row"><span>Pacifist</span><input type="range" min="0" max="100" defaultValue="55" /><span>Violent</span></div>
-                  <div className="range-row"><span>Thoughtful</span><input type="range" min="0" max="100" defaultValue="45" /><span>Impulsive</span></div>
-                  <div className="range-row"><span>Agreeable</span><input type="range" min="0" max="100" defaultValue="40" /><span>Contrary</span></div>
-                  <div className="range-row"><span>Idealistic</span><input type="range" min="0" max="100" defaultValue="45" /><span>Pragmatic</span></div>
-                  <div className="range-row"><span>Frugal</span><input type="range" min="0" max="100" defaultValue="50" /><span>Big Spender</span></div>
-                  <div className="range-row"><span>Extrovert</span><input type="range" min="0" max="100" defaultValue="55" /><span>Introvert</span></div>
-                  <div className="range-row"><span>Collected</span><input type="range" min="0" max="100" defaultValue="50" /><span>Wild</span></div>
+                  <div className="range-row"><span>Nice</span><Slider min="0" max="100" defaultValue="45" /><span>Mean</span></div>
+                  <div className="range-row"><span>Brave</span><Slider min="0" max="100" defaultValue="50" /><span>Cowardly</span></div>
+                  <div className="range-row"><span>Pacifist</span><Slider min="0" max="100" defaultValue="55" /><span>Violent</span></div>
+                  <div className="range-row"><span>Thoughtful</span><Slider min="0" max="100" defaultValue="45" /><span>Impulsive</span></div>
+                  <div className="range-row"><span>Agreeable</span><Slider min="0" max="100" defaultValue="40" /><span>Contrary</span></div>
+                  <div className="range-row"><span>Idealistic</span><Slider min="0" max="100" defaultValue="45" /><span>Pragmatic</span></div>
+                  <div className="range-row"><span>Frugal</span><Slider min="0" max="100" defaultValue="50" /><span>Big Spender</span></div>
+                  <div className="range-row"><span>Extrovert</span><Slider min="0" max="100" defaultValue="55" /><span>Introvert</span></div>
+                  <div className="range-row"><span>Collected</span><Slider min="0" max="100" defaultValue="50" /><span>Wild</span></div>
                 </div>
                 <div className="traits">
-                  <label><input type="checkbox" />Ambitious</label>
-                  <label><input type="checkbox" />Possessive</label>
-                  <label><input type="checkbox" />Stubborn</label>
-                  <label><input type="checkbox" />Jealous</label>
-                  <label><input type="checkbox" />Decisive</label>
-                  <label><input type="checkbox" />Perfectionist</label>
+                  <Toggle variant="checkbox" label="Ambitious" />
+                  <Toggle variant="checkbox" label="Possessive" />
+                  <Toggle variant="checkbox" label="Stubborn" />
+                  <Toggle variant="checkbox" label="Jealous" />
+                  <Toggle variant="checkbox" label="Decisive" />
+                  <Toggle variant="checkbox" label="Perfectionist" />
                 </div>
               </Panel>
       
@@ -540,20 +699,20 @@ export default function App() {
                     <div className="dot-row"><span className="stat-chip">Libido</span><div className="dots"><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /><input className="dot-input" type="checkbox" /></div></div>
                   </div>
                   <div className="social-grid">
-                    <div className="social-slider"><span>Honest</span><input type="range" min="0" max="100" defaultValue="55" /><span>Deceptive</span></div>
-                    <div className="social-slider"><span>Leader</span><input type="range" min="0" max="100" defaultValue="60" /><span>Follower</span></div>
-                    <div className="social-slider"><span>Polite</span><input type="range" min="0" max="100" defaultValue="50" /><span>Rude</span></div>
-                    <div className="social-slider"><span>Political</span><input type="range" min="0" max="100" defaultValue="45" /><span>Indifferent</span></div>
+                    <div className="social-slider"><span>Honest</span><Slider min="0" max="100" defaultValue="55" /><span>Deceptive</span></div>
+                    <div className="social-slider"><span>Leader</span><Slider min="0" max="100" defaultValue="60" /><span>Follower</span></div>
+                    <div className="social-slider"><span>Polite</span><Slider min="0" max="100" defaultValue="50" /><span>Rude</span></div>
+                    <div className="social-slider"><span>Political</span><Slider min="0" max="100" defaultValue="45" /><span>Indifferent</span></div>
                   </div>
                   <div className="checkbox-list">
-                    <label><input type="checkbox" />Cool</label>
-                    <label><input type="checkbox" />Flirty</label>
-                    <label><input type="checkbox" />Cute</label>
-                    <label><input type="checkbox" />Obedient</label>
-                    <label><input type="checkbox" />Fun</label>
-                    <label><input type="checkbox" />Forgiving</label>
-                    <label><input type="checkbox" />Gullible</label>
-                    <label><input type="checkbox" />Scary</label>
+                    <Toggle variant="checkbox" label="Cool" />
+                    <Toggle variant="checkbox" label="Flirty" />
+                    <Toggle variant="checkbox" label="Cute" />
+                    <Toggle variant="checkbox" label="Obedient" />
+                    <Toggle variant="checkbox" label="Fun" />
+                    <Toggle variant="checkbox" label="Forgiving" />
+                    <Toggle variant="checkbox" label="Gullible" />
+                    <Toggle variant="checkbox" label="Scary" />
                   </div>
                 </div>
               </Panel>
@@ -582,7 +741,17 @@ export default function App() {
           </button>
           <input type="file" id="importFile" accept="application/json" style={{ display: "none" }} />
         </div>
-      
+
+        <PreferencesModal
+          isOpen={preferencesOpen}
+          onClose={() => setPreferencesOpen(false)}
+          themeMode={themeMode}
+          onThemeChange={(value) => setThemeMode(value as ThemeMode)}
+          themeOptions={themeOptions}
+          animationsEnabled={animationsEnabled}
+          onAnimationsChange={setAnimationsEnabled}
+        />
+     
       
     </div>
   );

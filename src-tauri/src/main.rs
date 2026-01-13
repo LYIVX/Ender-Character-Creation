@@ -4,6 +4,27 @@
 use std::path::Path;
 use tauri::Manager;
 
+#[cfg(target_os = "windows")]
+fn apply_window_icon(app: &tauri::App) {
+  let icon_path = app
+    .path_resolver()
+    .resolve_resource("icons/icon.ico")
+    .or_else(|| {
+      let cwd = std::env::current_dir().ok()?;
+      let candidates = [
+        cwd.join("icons").join("icon.ico"),
+        cwd.join("src-tauri").join("icons").join("icon.ico"),
+        cwd.join("..").join("icons").join("icon.ico"),
+        cwd.join("..").join("src-tauri").join("icons").join("icon.ico"),
+      ];
+      candidates.into_iter().find(|path| path.exists())
+    });
+
+  if let (Some(window), Some(path)) = (app.get_window("main"), icon_path) {
+    let _ = window.set_icon(tauri::Icon::File(path));
+  }
+}
+
 #[tauri::command]
 fn launch_path(path: String) -> Result<(), String> {
   let target = Path::new(&path);
@@ -28,6 +49,11 @@ fn main() {
       }
     }))
   };
+  let builder = builder.setup(|app| {
+    #[cfg(target_os = "windows")]
+    apply_window_icon(app);
+    Ok(())
+  });
   builder
     .invoke_handler(tauri::generate_handler![launch_path])
     .run(tauri::generate_context!())
