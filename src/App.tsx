@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-import { applySheetSnapshot, getSheetSnapshot, initSheet, resetSheetToDefaults } from "./sheet";
+import {
+  applySheetSnapshot,
+  getSheetSnapshot,
+  getBlankSnapshot,
+  initSheet,
+  resetSectionPoints,
+  resetSheetToDefaults,
+} from "./sheet";
 import { open as openExternal } from "@tauri-apps/api/shell";
 import { convertFileSrc } from "@tauri-apps/api/tauri";
 import {
@@ -16,7 +23,7 @@ type ThemeMode = "galaxy" | "atelier" | "system" | "light" | "plain-light" | "pl
 type SheetTab = {
   id: string;
   title: string;
-  data: ReturnType<typeof getSheetSnapshot> | null;
+  data: ReturnType<typeof getSheetSnapshot> | { __blank: true; version: number } | null;
   relationships: Record<RelationshipTab, RelationshipEntry[]>;
   relationshipSelection: Record<RelationshipTab, string | null>;
 };
@@ -122,6 +129,15 @@ const createTabId = () => {
   return `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 };
 
+const createUntitledTitle = (index?: number) => {
+  const now = new Date();
+  const stamp = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  if (typeof index === "number") {
+    return `Untitled ${index} · ${stamp}`;
+  }
+  return `Untitled · ${stamp}`;
+};
+
 const createInitialTabs = () => {
   const fallbackId = createTabId();
   if (typeof window !== "undefined") {
@@ -135,7 +151,7 @@ const createInitialTabs = () => {
           title:
             typeof tab?.title === "string" && tab.title.trim().length
               ? tab.title
-              : `Sheet ${index + 1}`,
+              : createUntitledTitle(index + 1),
           data: tab?.data ?? null,
           relationships: normalizeRelationshipMap(tab?.relationships),
           relationshipSelection: normalizeRelationshipSelection(tab?.relationshipSelection),
@@ -157,7 +173,7 @@ const createInitialTabs = () => {
     tabs: [
       {
         id: fallbackId,
-        title: "Sheet 1",
+        title: createUntitledTitle(1),
         data: null,
         relationships: createRelationshipDefaults(),
         relationshipSelection: createRelationshipSelectionDefaults(),
@@ -167,6 +183,9 @@ const createInitialTabs = () => {
 };
 
 const getCharacterNameFromSnapshot = (data: any) => {
+  if (data?.__blank) {
+    return "";
+  }
   const identity = data?.identity ?? {};
   const rawName =
     identity.Name || identity.name || identity["Character Name"] || identity.characterName;
@@ -219,6 +238,18 @@ export default function App() {
   const [entitlementDebug, setEntitlementDebug] = useState("");
   const [launchToken, setLaunchToken] = useState<LaunchToken | null>(null);
   const portraitInputRef = useRef<HTMLInputElement | null>(null);
+
+  const cloneRelationshipMap = (map: Record<RelationshipTab, RelationshipEntry[]>) => ({
+    family: [...map.family],
+    friends: [...map.friends],
+    love: [...map.love],
+    hate: [...map.hate],
+  });
+
+  const updateTabsState = (nextTabs: SheetTab[]) => {
+    tabsRef.current = nextTabs;
+    setTabs(nextTabs);
+  };
 
   useEffect(() => {
     const cleanup = initSheet();
@@ -501,12 +532,12 @@ export default function App() {
         ? {
             ...tab,
             data: snapshot,
-            relationships: relationshipMap,
-            relationshipSelection,
+            relationships: cloneRelationshipMap(relationshipMap),
+            relationshipSelection: { ...relationshipSelection },
           }
         : tab
     );
-    setTabs(nextTabs);
+    updateTabsState(nextTabs);
     setMenuOpen(null);
   };
 
@@ -546,23 +577,32 @@ export default function App() {
   const commitActiveTab = () => {
     if (!sheetReady) return;
     const snapshot = getSheetSnapshot();
-    setTabs((prev) =>
-      prev.map((tab) =>
-        tab.id === activeTabId
-          ? {
-              ...tab,
-              data: snapshot,
-              relationships: relationshipMap,
-              relationshipSelection,
-            }
-          : tab
-      )
+    const nextTabs = tabsRef.current.map((tab) =>
+      tab.id === activeTabId
+        ? {
+            ...tab,
+            data: snapshot,
+            relationships: cloneRelationshipMap(relationshipMap),
+            relationshipSelection: { ...relationshipSelection },
+          }
+        : tab
     );
+    updateTabsState(nextTabs);
   };
 
   const applyTabSnapshot = (tabId: string) => {
     const target = tabsRef.current.find((tab) => tab.id === tabId);
-    applySheetSnapshot(target?.data ?? null);
+    if (target?.data && "__blank" in target.data) {
+      const blankSnapshot = getBlankSnapshot();
+      applySheetSnapshot(blankSnapshot);
+      updateTabsState(
+        tabsRef.current.map((tab) =>
+          tab.id === tabId ? { ...tab, data: blankSnapshot } : tab
+        )
+      );
+    } else {
+      applySheetSnapshot(target?.data ?? null);
+    }
     setRelationshipMap(normalizeRelationshipMap(target?.relationships));
     setRelationshipSelection(normalizeRelationshipSelection(target?.relationshipSelection));
     const nextTitle = getCharacterNameFromSnapshot(target?.data);
@@ -581,15 +621,15 @@ export default function App() {
     applyTabSnapshot(tabId);
   };
 
-  const createNewTab = () => {
+  const createNewTab = async () => {
     if (!sheetReady) return;
     const nextId = createTabId();
-    const nextTitle = `Sheet ${tabsRef.current.length + 1}`;
+    const nextTitle = createUntitledTitle(tabsRef.current.length + 1);
     commitActiveTab();
-    resetSheetToDefaults();
-    const blankSnapshot = getSheetSnapshot();
-    setTabs((prev) => [
-      ...prev,
+    const blankSnapshot = getBlankSnapshot();
+    applySheetSnapshot(blankSnapshot);
+    const nextTabs = [
+      ...tabsRef.current,
       {
         id: nextId,
         title: nextTitle,
@@ -597,7 +637,8 @@ export default function App() {
         relationships: createRelationshipDefaults(),
         relationshipSelection: createRelationshipSelectionDefaults(),
       },
-    ]);
+    ];
+    updateTabsState(nextTabs);
     setActiveTabId(nextId);
     setRelationshipMap(createRelationshipDefaults());
     setRelationshipSelection(createRelationshipSelectionDefaults());
@@ -639,8 +680,8 @@ export default function App() {
         file.name.replace(/\.[^/.]+$/, "") ||
         `Sheet ${tabsRef.current.length + 1}`;
       commitActiveTab();
-      setTabs((prev) => [
-        ...prev,
+      const nextTabs = [
+        ...tabsRef.current,
         {
           id: nextId,
           title: nextTitle,
@@ -648,7 +689,8 @@ export default function App() {
           relationships: normalizeRelationshipMap(data?.relationships),
           relationshipSelection: normalizeRelationshipSelection(data?.relationshipSelection),
         },
-      ]);
+      ];
+      updateTabsState(nextTabs);
       setActiveTabId(nextId);
       applySheetSnapshot(data);
       setRelationshipMap(normalizeRelationshipMap(data?.relationships));
@@ -1272,6 +1314,24 @@ export default function App() {
               <Panel variant="card" borderWidth={2} className="section" data-section="body">
                 <Panel variant="highlight" borderWidth={1} className="panel-header">
                   <span className="panel-title">Body</span>
+                  <div className="points-actions">
+                    <Panel
+                      id="pointsCounter-body"
+                      variant="card"
+                      borderWidth={1}
+                      className="points-counter"
+                    >
+                      Points 0/150
+                    </Panel>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="points-reset"
+                      onClick={() => resetSectionPoints("body")}
+                    >
+                      Reset
+                    </Button>
+                  </div>
                 </Panel>
                 <div className="stats-grid">
                   <div className="mini-list">
@@ -1291,6 +1351,24 @@ export default function App() {
                 <Panel variant="card" borderWidth={2} className="section" data-section="skills">
                   <Panel variant="highlight" borderWidth={1} className="panel-header">
                     <span className="panel-title">Skills</span>
+                    <div className="points-actions">
+                      <Panel
+                        id="pointsCounter-skills"
+                        variant="card"
+                        borderWidth={1}
+                        className="points-counter"
+                      >
+                        Points 0/150
+                      </Panel>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="points-reset"
+                        onClick={() => resetSectionPoints("skills")}
+                      >
+                        Reset
+                      </Button>
+                    </div>
                   </Panel>
                   <div className="skill-grid">
                     <div className="mini-list">
@@ -1302,6 +1380,9 @@ export default function App() {
                       <StatDots label="Creativity" count={4} />
                       <StatDots label="Cooking" count={4} />
                       <StatDots label="Combat" count={4} />
+                      <StatDots label="Gardening" count={4} />
+                      <StatDots label="Dancing" count={4} />
+                      <StatDots label="Storytelling" count={4} />
                     </div>
                     <div className="mini-list">
                       <StatDots label="Survival" count={4} />
@@ -1309,8 +1390,12 @@ export default function App() {
                       <StatDots label="Tech Savvy" count={4} />
                       <StatDots label="Street Smarts" count={4} />
                       <StatDots label="Seduction" count={4} />
-                      <StatDots label="Animal Handling" count={4} />
-                      <StatDots label="Child Handling" count={4} />
+                      <StatDots label="Luck" count={4} />
+                      <StatDots label="Artistry" count={4} />
+                      <StatDots label="Music" count={4} />
+                      <StatDots label="History" count={4} />
+                      <StatDots label="Animal Care" count={4} />
+                      <StatDots label="Child Care" count={4} />
                     </div>
                   </div>
                 </Panel>
@@ -1318,6 +1403,24 @@ export default function App() {
                 <Panel variant="card" borderWidth={2} className="section" data-section="priorities">
                   <Panel variant="highlight" borderWidth={1} className="panel-header">
                     <span className="panel-title">Priorities</span>
+                    <div className="points-actions">
+                      <Panel
+                        id="pointsCounter-priorities"
+                        variant="card"
+                        borderWidth={1}
+                        className="points-counter"
+                      >
+                        Points 0/150
+                      </Panel>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="points-reset"
+                        onClick={() => resetSectionPoints("priorities")}
+                      >
+                        Reset
+                      </Button>
+                    </div>
                   </Panel>
                   <div className="mini-list">
                     <StatDots label="Justice" count={4} />
@@ -1338,6 +1441,24 @@ export default function App() {
               <Panel variant="card" borderWidth={2} className="section" data-section="mind">
                 <Panel variant="highlight" borderWidth={1} className="panel-header">
                   <span className="panel-title">Mind</span>
+                  <div className="points-actions">
+                    <Panel
+                      id="pointsCounter-mind"
+                      variant="card"
+                      borderWidth={1}
+                      className="points-counter"
+                    >
+                      Points 0/150
+                    </Panel>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="points-reset"
+                      onClick={() => resetSectionPoints("mind")}
+                    >
+                      Reset
+                    </Button>
+                  </div>
                 </Panel>
                 <div className="stats-grid">
                   <div className="mini-list">
@@ -1377,6 +1498,24 @@ export default function App() {
               <Panel variant="card" borderWidth={2} className="section" data-section="social">
                 <Panel variant="highlight" borderWidth={1} className="panel-header">
                   <span className="panel-title">Social</span>
+                  <div className="points-actions">
+                    <Panel
+                      id="pointsCounter-social"
+                      variant="card"
+                      borderWidth={1}
+                      className="points-counter"
+                    >
+                      Points 0/150
+                    </Panel>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="points-reset"
+                      onClick={() => resetSectionPoints("social")}
+                    >
+                      Reset
+                    </Button>
+                  </div>
                 </Panel>
                 <div className="social-content">
                   <div>

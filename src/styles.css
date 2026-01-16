@@ -300,13 +300,38 @@
       flex-direction: column;
       min-height: 100%;
     }
-.panel-header {
+    .panel-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
       min-height: 40px;
       padding: 8px 12px;
+    }
+
+    .points-counter {
+      font-family: "Cinzel", "Times New Roman", serif;
+      font-size: 14px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 134, 200, 0.12);
+    }
+
+    .points-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .points-reset {
+      font-family: "Cinzel", "Times New Roman", serif;
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 6px 10px;
     }
 
     .notes-scroll {
@@ -678,6 +703,10 @@
     .mini-list {
       display: grid;
       gap: var(--cc-section-gap);
+    }
+
+    [data-section="social"] .mini-list {
+      gap: calc(var(--cc-section-gap) + 4px);
     }
 
     .list-row {
