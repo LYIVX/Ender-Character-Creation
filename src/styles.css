@@ -696,7 +696,17 @@
       font-size: 17px;
     }
 
-    .dots {
+    .ef-stat-dots {
+      --ef-stat-label-width: 180px;
+      display: grid;
+      grid-template-columns: var(--ef-stat-label-width) 1fr;
+      align-items: center;
+      gap: var(--cc-row-gap);
+      font-size: 17px;
+    }
+
+    .dots,
+    .ef-stat-dots__dots {
       display: inline-flex;
       gap: 4px;
     }
@@ -798,7 +808,8 @@
       font-size: 16px;
     }
 
-    .stat-chip {
+    .stat-chip,
+    .ef-stat-dots__label {
       font-family: "Cinzel", "Times New Roman", serif;
       font-size: 16px;
       letter-spacing: 1px;
@@ -807,7 +818,6 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: rgba(255, 134, 200, 0.12);
     }
 
     .fade-in {
