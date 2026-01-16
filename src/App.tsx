@@ -613,12 +613,20 @@ export default function App() {
     }
   };
 
+  const applyTabSnapshotDeferred = (tabId: string) => {
+    if (typeof window === "undefined") {
+      applyTabSnapshot(tabId);
+      return;
+    }
+    window.requestAnimationFrame(() => applyTabSnapshot(tabId));
+  };
+
   const setActiveTab = (tabId: string) => {
     if (!sheetReady) return;
     if (tabId === activeTabId) return;
     commitActiveTab();
     setActiveTabId(tabId);
-    applyTabSnapshot(tabId);
+    applyTabSnapshotDeferred(tabId);
   };
 
   const createNewTab = async () => {
@@ -662,9 +670,7 @@ export default function App() {
       const nextTab = nextTabs[fallbackIndex] ?? nextTabs[0];
       if (nextTab) {
         setActiveTabId(nextTab.id);
-        applySheetSnapshot(nextTab.data ?? null);
-        setRelationshipMap(normalizeRelationshipMap(nextTab.relationships));
-        setRelationshipSelection(normalizeRelationshipSelection(nextTab.relationshipSelection));
+        applyTabSnapshotDeferred(nextTab.id);
       }
     }
   };
