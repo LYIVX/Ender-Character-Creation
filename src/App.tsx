@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { initSheet } from "./sheet";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { applySheetSnapshot, getSheetSnapshot, initSheet, resetSheetToDefaults } from "./sheet";
 import { open as openExternal } from "@tauri-apps/api/shell";
 import { convertFileSrc } from "@tauri-apps/api/tauri";
 import {
@@ -13,6 +13,13 @@ import {
 import { AccessGate, Button, Dropdown, Input, MainHeader, Panel, PreferencesModal, Select, Slider, Textarea, Toggle, applyTheme, getStoredTheme } from "@enderfall/ui";
 
 type ThemeMode = "galaxy" | "atelier" | "system" | "light" | "plain-light" | "plain-dark";
+type SheetTab = {
+  id: string;
+  title: string;
+  data: ReturnType<typeof getSheetSnapshot> | null;
+  relationships: Record<RelationshipTab, RelationshipEntry[]>;
+  relationshipSelection: Record<RelationshipTab, string | null>;
+};
 
 const themeOptions: { value: ThemeMode; label: string }[] = [
   { value: "system", label: "System (Default)" },
@@ -39,6 +46,19 @@ const IconChevronDown = () => (
   </svg>
 );
 
+const IconClose = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path
+      d="M6 6l12 12M18 6l-12 12"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 const noteOptions = [
   "Personality",
   "Hobbies",
@@ -48,7 +68,100 @@ const noteOptions = [
   "Extras",
 ];
 
+type RelationshipTab = "family" | "friends";
+
+type RelationshipEntry = {
+  id: string;
+  name: string;
+  portrait: string | null;
+  relation?: string;
+  sourceFile?: string;
+  addedAt: number;
+};
+
+const createRelationshipDefaults = (): Record<RelationshipTab, RelationshipEntry[]> => ({
+  family: [],
+  friends: [],
+});
+const createRelationshipSelectionDefaults = (): Record<RelationshipTab, string | null> => ({
+  family: null,
+  friends: null,
+});
+const tabsStorageKey = "cc-sheet-tabs";
+
+const createTabId = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
+
+const createInitialTabs = () => {
+  const fallbackId = createTabId();
+  if (typeof window !== "undefined") {
+    try {
+      const stored = window.localStorage.getItem(tabsStorageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const rawTabs = Array.isArray(parsed?.tabs) ? parsed.tabs : [];
+        const tabs = rawTabs.map((tab: any, index: number) => ({
+          id: typeof tab?.id === "string" ? tab.id : createTabId(),
+          title:
+            typeof tab?.title === "string" && tab.title.trim().length
+              ? tab.title
+              : `Sheet ${index + 1}`,
+          data: tab?.data ?? null,
+          relationships: Array.isArray(tab?.relationships?.family) &&
+            Array.isArray(tab?.relationships?.friends)
+            ? tab.relationships
+            : createRelationshipDefaults(),
+          relationshipSelection:
+            tab?.relationshipSelection &&
+            "family" in tab.relationshipSelection &&
+            "friends" in tab.relationshipSelection
+              ? tab.relationshipSelection
+              : createRelationshipSelectionDefaults(),
+        }));
+        if (tabs.length) {
+          const activeId =
+            typeof parsed?.activeId === "string" && tabs.some((tab: SheetTab) => tab.id === parsed.activeId)
+              ? parsed.activeId
+              : tabs[0].id;
+          return { activeId, tabs };
+        }
+      }
+    } catch {
+      // ignore stored tab failures
+    }
+  }
+  return {
+    activeId: fallbackId,
+    tabs: [
+      {
+        id: fallbackId,
+        title: "Sheet 1",
+        data: null,
+        relationships: createRelationshipDefaults(),
+        relationshipSelection: createRelationshipSelectionDefaults(),
+      },
+    ],
+  };
+};
+
+const getCharacterNameFromSnapshot = (data: any) => {
+  const identity = data?.identity ?? {};
+  const rawName =
+    identity.Name || identity.name || identity["Character Name"] || identity.characterName;
+  return typeof rawName === "string" ? rawName.trim() : "";
+};
+
 export default function App() {
+  const initialTabs = useMemo(createInitialTabs, []);
+  const [tabs, setTabs] = useState<SheetTab[]>(initialTabs.tabs);
+  const [activeTabId, setActiveTabId] = useState(initialTabs.activeId);
+  const tabsRef = useRef<SheetTab[]>(initialTabs.tabs);
+  const [sheetReady, setSheetReady] = useState(false);
+  const hasAppliedStoredTab = useRef(false);
   const [menuOpen, setMenuOpen] = useState<"file" | "edit" | "view" | "help" | null>(null);
   const menuCloseRef = useRef<number | null>(null);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
@@ -68,6 +181,17 @@ export default function App() {
     []
   );
   const [noteSelectValue, setNoteSelectValue] = useState(noteOptions[0]);
+  const [relationshipTab, setRelationshipTab] = useState<RelationshipTab>("family");
+  const [relationshipDropdownOpen, setRelationshipDropdownOpen] = useState<RelationshipTab | null>(
+    null
+  );
+  const [relationshipSelection, setRelationshipSelection] = useState<
+    Record<RelationshipTab, string | null>
+  >(createRelationshipSelectionDefaults);
+  const [relationshipMap, setRelationshipMap] = useState<
+    Record<RelationshipTab, RelationshipEntry[]>
+  >(createRelationshipDefaults);
+  const relationshipInputRef = useRef<HTMLInputElement | null>(null);
   const isSharedTheme = (mode: ThemeMode) => mode !== "atelier";
   const [entitlementStatus, setEntitlementStatus] = useState<"checking" | "allowed" | "locked">(
     isTauri ? "checking" : "allowed"
@@ -79,8 +203,56 @@ export default function App() {
   const portraitInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    return initSheet();
+    const cleanup = initSheet();
+    setSheetReady(true);
+    return cleanup;
   }, []);
+
+  useEffect(() => {
+    tabsRef.current = tabs;
+  }, [tabs]);
+
+  useEffect(() => {
+    if (!sheetReady || hasAppliedStoredTab.current) return;
+    const activeTab = tabsRef.current.find((tab) => tab.id === activeTabId);
+    applySheetSnapshot(activeTab?.data ?? null);
+    setRelationshipMap(activeTab?.relationships ?? createRelationshipDefaults());
+    setRelationshipSelection(
+      activeTab?.relationshipSelection ?? createRelationshipSelectionDefaults()
+    );
+    hasAppliedStoredTab.current = true;
+  }, [activeTabId, sheetReady]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        tabsStorageKey,
+        JSON.stringify({
+          activeId: activeTabId,
+          tabs,
+        })
+      );
+    } catch {
+      // ignore storage failures
+    }
+  }, [activeTabId, tabs]);
+
+  useEffect(() => {
+    if (!sheetReady) return;
+    const input = document.getElementById("characterNameInput") as HTMLInputElement | null;
+    if (!input) return;
+    const handleInput = () => {
+      const value = input.value.trim();
+      if (!value) return;
+      setTabs((prev) =>
+        prev.map((tab) => (tab.id === activeTabId ? { ...tab, title: value } : tab))
+      );
+    };
+    handleInput();
+    input.addEventListener("input", handleInput);
+    return () => input.removeEventListener("input", handleInput);
+  }, [activeTabId, sheetReady]);
 
   useEffect(() => {
     if (!isTauri) return;
@@ -283,13 +455,46 @@ export default function App() {
 
   const triggerExport = () => {
     if (!isPremium) return;
-    const button = document.getElementById("exportBtn") as HTMLButtonElement | null;
-    button?.click();
+    if (!sheetReady) return;
+    const snapshot = getSheetSnapshot();
+    const payload = {
+      ...(snapshot ?? { version: 2 }),
+      relationships: relationshipMap,
+      relationshipSelection,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json"
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "character-sheet.json";
+    link.click();
+    URL.revokeObjectURL(url);
+    setMenuOpen(null);
+  };
+
+  const triggerSave = () => {
+    if (!isPremium) return;
+    if (!sheetReady) return;
+    const snapshot = getSheetSnapshot();
+    const nextTabs = tabsRef.current.map((tab) =>
+      tab.id === activeTabId
+        ? {
+            ...tab,
+            data: snapshot,
+            relationships: relationshipMap,
+            relationshipSelection,
+          }
+        : tab
+    );
+    setTabs(nextTabs);
     setMenuOpen(null);
   };
 
   const startNewSheet = () => {
-    window.location.reload();
+    createNewTab();
+    setMenuOpen(null);
   };
 
   const openAbout = () => {
@@ -320,6 +525,263 @@ export default function App() {
     }
   };
 
+  const commitActiveTab = () => {
+    if (!sheetReady) return;
+    const snapshot = getSheetSnapshot();
+    setTabs((prev) =>
+      prev.map((tab) =>
+        tab.id === activeTabId
+          ? {
+              ...tab,
+              data: snapshot,
+              relationships: relationshipMap,
+              relationshipSelection,
+            }
+          : tab
+      )
+    );
+  };
+
+  const applyTabSnapshot = (tabId: string) => {
+    const target = tabsRef.current.find((tab) => tab.id === tabId);
+    applySheetSnapshot(target?.data ?? null);
+    setRelationshipMap(target?.relationships ?? createRelationshipDefaults());
+    setRelationshipSelection(target?.relationshipSelection ?? createRelationshipSelectionDefaults());
+    const nextTitle = getCharacterNameFromSnapshot(target?.data);
+    if (nextTitle) {
+      setTabs((prev) =>
+        prev.map((tab) => (tab.id === tabId ? { ...tab, title: nextTitle } : tab))
+      );
+    }
+  };
+
+  const setActiveTab = (tabId: string) => {
+    if (!sheetReady) return;
+    if (tabId === activeTabId) return;
+    commitActiveTab();
+    setActiveTabId(tabId);
+    applyTabSnapshot(tabId);
+  };
+
+  const createNewTab = () => {
+    if (!sheetReady) return;
+    const nextId = createTabId();
+    const nextTitle = `Sheet ${tabsRef.current.length + 1}`;
+    commitActiveTab();
+    resetSheetToDefaults();
+    const blankSnapshot = getSheetSnapshot();
+    setTabs((prev) => [
+      ...prev,
+      {
+        id: nextId,
+        title: nextTitle,
+        data: blankSnapshot,
+        relationships: createRelationshipDefaults(),
+        relationshipSelection: createRelationshipSelectionDefaults(),
+      },
+    ]);
+    setActiveTabId(nextId);
+    setRelationshipMap(createRelationshipDefaults());
+    setRelationshipSelection(createRelationshipSelectionDefaults());
+  };
+
+  const removeTab = (tabId: string) => {
+    if (!sheetReady) return;
+    const currentTabs = tabsRef.current;
+    if (currentTabs.length <= 1) return;
+    const nextTabs = currentTabs.filter((tab) => tab.id !== tabId);
+    const wasActive = tabId === activeTabId;
+    setTabs(nextTabs);
+    if (wasActive) {
+      const removedIndex = currentTabs.findIndex((tab) => tab.id === tabId);
+      const fallbackIndex = removedIndex > 0 ? removedIndex - 1 : 0;
+      const nextTab = nextTabs[fallbackIndex] ?? nextTabs[0];
+      if (nextTab) {
+        setActiveTabId(nextTab.id);
+        applySheetSnapshot(nextTab.data ?? null);
+        setRelationshipMap(nextTab.relationships ?? createRelationshipDefaults());
+        setRelationshipSelection(
+          nextTab.relationshipSelection ?? createRelationshipSelectionDefaults()
+        );
+      }
+    }
+  };
+
+  const handleImportTab = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) {
+      return;
+    }
+    const file = files[0];
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const nextId = createTabId();
+      const nameFromData = getCharacterNameFromSnapshot(data);
+      const nextTitle =
+        nameFromData ||
+        file.name.replace(/\.[^/.]+$/, "") ||
+        `Sheet ${tabsRef.current.length + 1}`;
+      commitActiveTab();
+      setTabs((prev) => [
+        ...prev,
+        {
+          id: nextId,
+          title: nextTitle,
+          data,
+          relationships: data?.relationships ?? createRelationshipDefaults(),
+          relationshipSelection: data?.relationshipSelection ?? createRelationshipSelectionDefaults(),
+        },
+      ]);
+      setActiveTabId(nextId);
+      applySheetSnapshot(data);
+      setRelationshipMap(data?.relationships ?? createRelationshipDefaults());
+      setRelationshipSelection(data?.relationshipSelection ?? createRelationshipSelectionDefaults());
+    } catch (err) {
+      console.error("Invalid import file", err);
+    } finally {
+      event.target.value = "";
+    }
+    setMenuOpen(null);
+  };
+
+  const triggerRelationshipImport = () => {
+    relationshipInputRef.current?.click();
+  };
+
+  const makeRelationshipId = () => {
+    if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+      return crypto.randomUUID();
+    }
+    return `rel-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  };
+
+  const getRelationshipName = (data: any, fileName: string) => {
+    const identity = data?.identity ?? {};
+    const rawName =
+      identity.Name || identity.name || identity["Character Name"] || identity.characterName;
+    const cleaned = typeof rawName === "string" ? rawName.trim() : "";
+    if (cleaned) {
+      return cleaned;
+    }
+    const baseName = fileName.replace(/\.[^/.]+$/, "");
+    return baseName || "Imported Sheet";
+  };
+
+  const parseRelationshipFile = async (file: File, target: RelationshipTab) => {
+    try {
+      const raw = await file.text();
+      const data = JSON.parse(raw);
+      const name = getRelationshipName(data, file.name);
+      const portrait = typeof data?.portrait === "string" ? data.portrait : null;
+      return {
+        id: makeRelationshipId(),
+        name,
+        portrait,
+        relation: target === "family" ? "" : undefined,
+        sourceFile: file.name,
+        addedAt: Date.now(),
+      } as RelationshipEntry;
+    } catch {
+      return null;
+    }
+  };
+
+  const handleRelationshipImport = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) {
+      return;
+    }
+    const target = relationshipTab;
+    const entries = await Promise.all(
+      Array.from(files).map((file) => parseRelationshipFile(file, target))
+    );
+    const valid = entries.filter((entry) => entry) as RelationshipEntry[];
+    if (valid.length) {
+      setRelationshipMap((prev) => ({
+        ...prev,
+        [target]: [...valid, ...prev[target]],
+      }));
+      if (!relationshipSelection[target]) {
+        setRelationshipSelection((prev) => ({
+          ...prev,
+          [target]: valid[0]?.id ?? null,
+        }));
+      }
+    }
+    event.target.value = "";
+  };
+
+  const updateRelationship = (
+    target: RelationshipTab,
+    id: string,
+    updates: Partial<RelationshipEntry>
+  ) => {
+    setRelationshipMap((prev) => ({
+      ...prev,
+      [target]: prev[target].map((entry) =>
+        entry.id === id ? { ...entry, ...updates } : entry
+      ),
+    }));
+  };
+
+  const removeRelationship = (target: RelationshipTab, id: string) => {
+    setRelationshipMap((prev) => ({
+      ...prev,
+      [target]: prev[target].filter((entry) => entry.id !== id),
+    }));
+    setRelationshipSelection((prev) => ({
+      ...prev,
+      [target]: prev[target] === id ? null : prev[target],
+    }));
+  };
+
+  const confirmRelationshipEdit = (target: RelationshipTab) => {
+    setRelationshipSelection((prev) => ({
+      ...prev,
+      [target]: null,
+    }));
+  };
+
+  const activeRelationships = relationshipMap[relationshipTab];
+  const activeRelationshipId = relationshipSelection[relationshipTab];
+  const activeRelationship =
+    activeRelationshipId &&
+    activeRelationships.find((entry) => entry.id === activeRelationshipId);
+  const familyDropdownItems = relationshipMap.family.map((entry) => ({
+    id: entry.id,
+    label: entry.name,
+    subtitle: entry.relation ?? undefined,
+    avatarUrl: entry.portrait ?? null,
+    avatarFallback: entry.name.slice(0, 1).toUpperCase(),
+    onClick: () => {
+      setRelationshipTab("family");
+      setRelationshipSelection((prev) => ({ ...prev, family: entry.id }));
+    },
+    onEdit: () => {
+      setRelationshipTab("family");
+      setRelationshipSelection((prev) => ({ ...prev, family: entry.id }));
+    },
+    onDelete: () => removeRelationship("family", entry.id),
+  }));
+  const friendsDropdownItems = relationshipMap.friends.map((entry) => ({
+    id: entry.id,
+    label: entry.name,
+    avatarUrl: entry.portrait ?? null,
+    avatarFallback: entry.name.slice(0, 1).toUpperCase(),
+    onClick: () => {
+      setRelationshipTab("friends");
+      setRelationshipSelection((prev) => ({ ...prev, friends: entry.id }));
+    },
+    onEdit: () => {
+      setRelationshipTab("friends");
+      setRelationshipSelection((prev) => ({ ...prev, friends: entry.id }));
+    },
+    onDelete: () => removeRelationship("friends", entry.id),
+  }));
+  const familyAvatar = relationshipMap.family[0]?.portrait ?? null;
+  const friendsAvatar = relationshipMap.friends[0]?.portrait ?? null;
+
   return (
     <div className="page">
       <AccessGate
@@ -347,7 +809,16 @@ export default function App() {
                   disabled={!isPremium}
                   title={!isPremium ? "Premium required" : undefined}
                 >
-                  Import...
+                  Open...
+                </button>
+                <button
+                  className="ef-menu-item"
+                  type="button"
+                  onClick={triggerSave}
+                  disabled={!isPremium}
+                  title={!isPremium ? "Premium required" : undefined}
+                >
+                  Save...
                 </button>
                 <button
                   className="ef-menu-item"
@@ -450,6 +921,35 @@ export default function App() {
           Free mode active. Import and export unlock with premium access.
         </div>
       ) : null}
+      <div className="sheet-tabs">
+        <div className="sheet-tab-track">
+          {tabs.map((tab) => (
+            <div key={tab.id} className="sheet-tab-item">
+              <Button
+                type="button"
+                variant="ghost"
+                className={`sheet-tab ${tab.id === activeTabId ? "is-active" : ""}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.title}
+              </Button>
+              <Button
+                type="button"
+                variant="delete"
+                className="sheet-tab-close"
+                aria-label={`Close ${tab.title}`}
+                onClick={() => removeTab(tab.id)}
+                disabled={tabs.length <= 1}
+              >
+                <IconClose />
+              </Button>
+            </div>
+          ))}
+        </div>
+        <Button type="button" variant="primary" className="sheet-tab-add" onClick={createNewTab}>
+          + New
+        </Button>
+      </div>
       <Panel variant="card" borderWidth={2} className="frame">
           <div className="sheet">
             <div className="left-panel fade-in">
@@ -569,7 +1069,15 @@ export default function App() {
                   <span className="panel-title">Identity</span>
                 </Panel>
                 <div className="identity">
-                  <div className="label-row"><span>Name</span><Input className="line-input" type="text" defaultValue="Jane Doe" /></div>
+                  <div className="label-row">
+                    <span>Name</span>
+                    <Input
+                      id="characterNameInput"
+                      className="line-input"
+                      type="text"
+                      defaultValue="Jane Doe"
+                    />
+                  </div>
                   <div className="label-row"><span>Nickname</span><Input className="line-input" type="text" defaultValue="Unknown" /></div>
                   <div className="label-row"><span>Race/Species</span><Input className="line-input" type="text" defaultValue="Unknown" /></div>
                   <div className="label-row"><span>Age</span><Input className="line-input" type="text" defaultValue="XX" /></div>
@@ -580,6 +1088,108 @@ export default function App() {
                 </div>
               </Panel>
       
+              <Panel variant="card" borderWidth={2} className="section relationships-section">
+                <Panel variant="highlight" borderWidth={1} className="panel-header">
+                  <span className="panel-title">Connections</span>
+                  <div className="relationship-actions">
+                    <Button type="button" onClick={triggerRelationshipImport}>
+                      Import to {relationshipTab === "family" ? "Family" : "Friends"}
+                    </Button>
+                    <input
+                      ref={relationshipInputRef}
+                      type="file"
+                      id="relationshipImport"
+                      accept="application/json"
+                      multiple
+                      style={{ display: "none" }}
+                      onChange={handleRelationshipImport}
+                    />
+                  </div>
+                </Panel>
+                <div className="relationship-tabs">
+                  <Dropdown
+                    variant="user-list"
+                    name={`Family (${relationshipMap.family.length})`}
+                    avatarUrl={familyAvatar}
+                    items={familyDropdownItems}
+                    emptyLabel="No family added yet."
+                    open={relationshipDropdownOpen === "family"}
+                    onOpenChange={(open) => {
+                      setRelationshipDropdownOpen(open ? "family" : null);
+                      if (open) setRelationshipTab("family");
+                    }}
+                  />
+                  <Dropdown
+                    variant="user-list"
+                    name={`Friends (${relationshipMap.friends.length})`}
+                    avatarUrl={friendsAvatar}
+                    items={friendsDropdownItems}
+                    emptyLabel="No friends added yet."
+                    open={relationshipDropdownOpen === "friends"}
+                    onOpenChange={(open) => {
+                      setRelationshipDropdownOpen(open ? "friends" : null);
+                      if (open) setRelationshipTab("friends");
+                    }}
+                  />
+                </div>
+                {activeRelationship ? (
+                  <div className="relationship-list">
+                    <Panel variant="card" borderWidth={1} className="relationship-card">
+                      <div className="relationship-avatar">
+                        {activeRelationship.portrait ? (
+                          <img
+                            src={activeRelationship.portrait}
+                            alt={`${activeRelationship.name} portrait`}
+                          />
+                        ) : (
+                          <span>{activeRelationship.name.slice(0, 1).toUpperCase()}</span>
+                        )}
+                      </div>
+                      <div className="relationship-meta">
+                        <div className="relationship-name">{activeRelationship.name}</div>
+                        {relationshipTab === "family" ? (
+                          <Input
+                            className="relationship-input"
+                            type="text"
+                            value={activeRelationship.relation ?? ""}
+                            placeholder="e.g. Mother"
+                            onChange={(event) =>
+                              updateRelationship("family", activeRelationship.id, {
+                                relation: event.target.value,
+                              })
+                            }
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") {
+                                event.preventDefault();
+                                confirmRelationshipEdit("family");
+                              }
+                            }}
+                          />
+                        ) : null}
+                      </div>
+                      <div className="relationship-card-actions">
+                        <Button
+                          type="button"
+                          variant="success"
+                          className="relationship-confirm"
+                          onClick={() => confirmRelationshipEdit(relationshipTab)}
+                        >
+                          Confirm
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="delete"
+                          className="relationship-remove"
+                          onClick={() => removeRelationship(relationshipTab, activeRelationship.id)}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </Panel>
+                  </div>
+                ) : null}
+              </Panel>
+
               <Panel variant="card" borderWidth={2} className="section" data-section="body">
                 <Panel variant="highlight" borderWidth={1} className="panel-header">
                   <span className="panel-title">Body</span>
@@ -721,26 +1331,14 @@ export default function App() {
         </Panel>
       
       <div>
-          <button
-            className="action-btn"
-            id="importBtn"
-            type="button"
-            disabled={!isPremium}
-            title={!isPremium ? "Premium required" : undefined}
-          >
-            Import
-          </button>
-          <button
-            className="action-btn"
-            id="exportBtn"
-            type="button"
-            disabled={!isPremium}
-            title={!isPremium ? "Premium required" : undefined}
-          >
-            Export
-          </button>
-          <input type="file" id="importFile" accept="application/json" style={{ display: "none" }} />
-        </div>
+        <input
+          type="file"
+          id="importFile"
+          accept="application/json"
+          style={{ display: "none" }}
+          onChange={handleImportTab}
+        />
+      </div>
 
         <PreferencesModal
           isOpen={preferencesOpen}
