@@ -17,7 +17,7 @@ import {
   writeSharedPreferences,
   type LaunchToken,
 } from "@enderfall/runtime";
-import { AccessGate, Button, Dropdown, Input, MainHeader, Panel, PreferencesModal, Select, Slider, StatDots, Textarea, Toggle, applyTheme, getStoredTheme } from "@enderfall/ui";
+import { AccessGate, Button, Dropdown, Input, MainHeader, Panel, PreferencesModal, Select, SideMenu, SideMenuSubmenu, Slider, StatDots, Textarea, Toggle, applyTheme, getStoredTheme } from "@enderfall/ui";
 
 type ThemeMode = "galaxy" | "atelier" | "system" | "light" | "plain-light" | "plain-dark";
 type SheetTab = {
@@ -31,8 +31,8 @@ type SheetTab = {
 const themeOptions: { value: ThemeMode; label: string }[] = [
   { value: "system", label: "System (Default)" },
   { value: "galaxy", label: "Galaxy (Dark)" },
-  { value: "atelier", label: "Atelier" },
   { value: "light", label: "Galaxy (Light)" },
+  { value: "atelier", label: "Atelier" },
   { value: "plain-light", label: "Plain Light" },
   { value: "plain-dark", label: "Plain Dark" },
 ];
@@ -958,27 +958,44 @@ export default function App() {
             id: "view",
             label: "View",
             content: (
-              <div className="ef-menu-item has-submenu" role="button" tabIndex={0}>
-                <span>Theme</span>
-                <span className="ef-menu-sub-caret">
-                  <IconChevronDown />
-                </span>
-                <div className="ef-menu-sub">
-                  {themeOptions.map((item) => (
+              <SideMenu resetKey={menuOpen === "view" ? "open" : "closed"}>
+                <SideMenuSubmenu
+                  id="theme"
+                  className="ef-menu-group"
+                  panelClassName="ef-menu-sub ef-menu-sub--header"
+                  enableViewportFlip
+                  variant="header"
+                  trigger={(triggerProps) => (
                     <button
-                      key={item.value}
                       className="ef-menu-item"
+                      type="button"
+                      onClick={triggerProps.onClick}
+                      aria-expanded={triggerProps["aria-expanded"]}
+                      disabled={triggerProps.disabled}
+                    >
+                      <span>Theme</span>
+                      <span className="ef-menu-sub-caret">
+                        <IconChevronDown />
+                      </span>
+                    </button>
+                  )}
+                >
+                  {themeOptions.map((item) => (
+                    <Button
+                      key={item.value}
+                      className={`theme-preview theme-preview--${item.value}`}
+                      variant="primary"
                       type="button"
                       onClick={() => {
                         setThemeMode(item.value);
-                        setMenuOpen(null);
+                        closeMenu();
                       }}
                     >
                       {item.label}
-                    </button>
+                    </Button>
                   ))}
-                </div>
-              </div>
+                </SideMenuSubmenu>
+              </SideMenu>
             ),
           },
           {
