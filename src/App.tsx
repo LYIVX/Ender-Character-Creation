@@ -1486,15 +1486,15 @@ export default function App() {
                   </div>
                 </div>
                 <div className="stacked">
-                  <div className="range-row"><span>Nice</span><Slider min="0" max="100" defaultValue="45" /><span>Mean</span></div>
-                  <div className="range-row"><span>Brave</span><Slider min="0" max="100" defaultValue="50" /><span>Cowardly</span></div>
-                  <div className="range-row"><span>Pacifist</span><Slider min="0" max="100" defaultValue="55" /><span>Violent</span></div>
-                  <div className="range-row"><span>Thoughtful</span><Slider min="0" max="100" defaultValue="45" /><span>Impulsive</span></div>
-                  <div className="range-row"><span>Agreeable</span><Slider min="0" max="100" defaultValue="40" /><span>Contrary</span></div>
-                  <div className="range-row"><span>Idealistic</span><Slider min="0" max="100" defaultValue="45" /><span>Pragmatic</span></div>
-                  <div className="range-row"><span>Frugal</span><Slider min="0" max="100" defaultValue="50" /><span>Big Spender</span></div>
-                  <div className="range-row"><span>Extrovert</span><Slider min="0" max="100" defaultValue="55" /><span>Introvert</span></div>
-                  <div className="range-row"><span>Collected</span><Slider min="0" max="100" defaultValue="50" /><span>Wild</span></div>
+                  <div className="range-row"><span>Nice</span><Slider min="0" max="10" step="1" defaultValue="5" /><span>Mean</span></div>
+                  <div className="range-row"><span>Brave</span><Slider min="0" max="10" step="1" defaultValue="5" /><span>Cowardly</span></div>
+                  <div className="range-row"><span>Pacifist</span><Slider min="0" max="10" step="1" defaultValue="5" /><span>Violent</span></div>
+                  <div className="range-row"><span>Thoughtful</span><Slider min="0" max="10" step="1" defaultValue="5" /><span>Impulsive</span></div>
+                  <div className="range-row"><span>Agreeable</span><Slider min="0" max="10" step="1" defaultValue="5" /><span>Contrary</span></div>
+                  <div className="range-row"><span>Idealistic</span><Slider min="0" max="10" step="1" defaultValue="5" /><span>Pragmatic</span></div>
+                  <div className="range-row"><span>Frugal</span><Slider min="0" max="10" step="1" defaultValue="5" /><span>Big Spender</span></div>
+                  <div className="range-row"><span>Extrovert</span><Slider min="0" max="10" step="1" defaultValue="5" /><span>Introvert</span></div>
+                  <div className="range-row"><span>Collected</span><Slider min="0" max="10" step="1" defaultValue="5" /><span>Wild</span></div>
                 </div>
                 <div className="traits">
                   <Toggle variant="checkbox" label="Ambitious" />
@@ -1528,31 +1528,33 @@ export default function App() {
                     </Button>
                   </div>
                 </Panel>
-                <div className="social-content">
-                  <div>
+                <div className="stats-grid">
+                  <div className="mini-list">
                     <StatDots label="Charisma" count={5} />
                     <StatDots label="Empathy" count={5} />
                     <StatDots label="Generosity" count={5} />
+                  </div>
+                  <div className="mini-list">
                     <StatDots label="Wealth" count={5} />
                     <StatDots label="Aggression" count={5} />
                     <StatDots label="Libido" count={5} />
                   </div>
-                  <div className="social-grid">
-                    <div className="social-slider"><span>Honest</span><Slider min="0" max="100" defaultValue="55" /><span>Deceptive</span></div>
-                    <div className="social-slider"><span>Leader</span><Slider min="0" max="100" defaultValue="60" /><span>Follower</span></div>
-                    <div className="social-slider"><span>Polite</span><Slider min="0" max="100" defaultValue="50" /><span>Rude</span></div>
-                    <div className="social-slider"><span>Political</span><Slider min="0" max="100" defaultValue="45" /><span>Indifferent</span></div>
-                  </div>
-                  <div className="checkbox-list">
-                    <Toggle variant="checkbox" label="Cool" />
-                    <Toggle variant="checkbox" label="Flirty" />
-                    <Toggle variant="checkbox" label="Cute" />
-                    <Toggle variant="checkbox" label="Obedient" />
-                    <Toggle variant="checkbox" label="Fun" />
-                    <Toggle variant="checkbox" label="Forgiving" />
-                    <Toggle variant="checkbox" label="Gullible" />
-                    <Toggle variant="checkbox" label="Scary" />
-                  </div>
+                </div>
+                <div className="stacked">
+                  <div className="social-slider"><span>Honest</span><Slider min="0" max="10" step="1" defaultValue="5" /><span>Deceptive</span></div>
+                  <div className="social-slider"><span>Leader</span><Slider min="0" max="10" step="1" defaultValue="5" /><span>Follower</span></div>
+                  <div className="social-slider"><span>Polite</span><Slider min="0" max="10" step="1" defaultValue="5" /><span>Rude</span></div>
+                  <div className="social-slider"><span>Political</span><Slider min="0" max="10" step="1" defaultValue="5" /><span>Indifferent</span></div>
+                </div>
+                <div className="checkbox-list">
+                  <Toggle variant="checkbox" label="Cool" />
+                  <Toggle variant="checkbox" label="Flirty" />
+                  <Toggle variant="checkbox" label="Cute" />
+                  <Toggle variant="checkbox" label="Obedient" />
+                  <Toggle variant="checkbox" label="Fun" />
+                  <Toggle variant="checkbox" label="Forgiving" />
+                  <Toggle variant="checkbox" label="Gullible" />
+                  <Toggle variant="checkbox" label="Scary" />
                 </div>
               </Panel>
             </div>

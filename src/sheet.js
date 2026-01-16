@@ -462,27 +462,21 @@ const getDefaultSlidersFromDom = (sectionName, selector) => {
 };
 
 const buildDefaultSnapshot = () => {
-  const base = defaultsSnapshot ?? {
-    identity: getDefaultIdentityFromDom(),
-    notes: getDefaultNotesFromDom(),
-    mind: { sliders: getDefaultSlidersFromDom("mind", ".range-row") },
-    social: { sliders: getDefaultSlidersFromDom("social", ".social-slider") },
-  };
   return {
     version: 2,
-    identity: { ...(base?.identity ?? {}) },
-    notes: Array.isArray(base?.notes) ? base.notes.map((note) => ({ ...note })) : [],
+    identity: getDefaultIdentityFromDom(),
+    notes: getDefaultNotesFromDom(),
     body: { stats: {} },
     skills: { stats: {} },
     priorities: { stats: {} },
     mind: {
       stats: {},
-      sliders: { ...(base?.mind?.sliders ?? {}) },
+      sliders: getDefaultSlidersFromDom("mind", ".range-row"),
       traits: {},
     },
     social: {
       stats: {},
-      sliders: { ...(base?.social?.sliders ?? {}) },
+      sliders: getDefaultSlidersFromDom("social", ".social-slider"),
       traits: {},
     },
     portrait: null,
