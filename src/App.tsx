@@ -921,7 +921,7 @@ export default function App() {
           Free mode active. Import and export unlock with premium access.
         </div>
       ) : null}
-      <div className="sheet-tabs">
+      <Panel variant="card" borderWidth={1} className="sheet-tabs">
         <div className="sheet-tab-track">
           {tabs.map((tab) => (
             <div key={tab.id} className="sheet-tab-item">
@@ -949,7 +949,7 @@ export default function App() {
         <Button type="button" variant="primary" className="sheet-tab-add" onClick={createNewTab}>
           + New
         </Button>
-      </div>
+      </Panel>
       <Panel variant="card" borderWidth={2} className="frame">
           <div className="sheet">
             <div className="left-panel fade-in">
