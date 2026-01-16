@@ -442,6 +442,7 @@
       grid-template-columns: auto 1fr;
       gap: var(--cc-row-gap);
       align-items: center;
+      justify-items: end;
     }
 
     .label-row span {
@@ -461,6 +462,10 @@
       font-size: 18px;
       padding: 2px 4px 2px;
       font-family: "Spectral", "Times New Roman", serif;
+    }
+
+    .line-input {
+      min-width: 300px;
     }
 
     .relationships-section {
