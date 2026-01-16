@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
   applySheetSnapshot,
+  getDefaultSnapshot,
   getSheetSnapshot,
   getBlankSnapshot,
   initSheet,
   resetSectionPoints,
-  resetSheetToDefaults,
 } from "./sheet";
 import { open as openExternal } from "@tauri-apps/api/shell";
 import { convertFileSrc } from "@tauri-apps/api/tauri";
@@ -626,14 +626,14 @@ export default function App() {
     const nextId = createTabId();
     const nextTitle = createUntitledTitle(tabsRef.current.length + 1);
     commitActiveTab();
-    const blankSnapshot = getBlankSnapshot();
-    applySheetSnapshot(blankSnapshot);
+    const defaultSnapshot = getDefaultSnapshot();
+    applySheetSnapshot(defaultSnapshot);
     const nextTabs = [
       ...tabsRef.current,
       {
         id: nextId,
         title: nextTitle,
-        data: blankSnapshot,
+        data: defaultSnapshot,
         relationships: createRelationshipDefaults(),
         relationshipSelection: createRelationshipSelectionDefaults(),
       },
@@ -642,6 +642,11 @@ export default function App() {
     setActiveTabId(nextId);
     setRelationshipMap(createRelationshipDefaults());
     setRelationshipSelection(createRelationshipSelectionDefaults());
+    if (typeof window !== "undefined") {
+      window.requestAnimationFrame(() => {
+        applySheetSnapshot(defaultSnapshot);
+      });
+    }
   };
 
   const removeTab = (tabId: string) => {

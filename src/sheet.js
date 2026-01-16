@@ -411,6 +411,84 @@ const buildBlankSnapshot = () => {
   };
 };
 
+const getDefaultRangeValue = (input) => {
+  if (!input) return 0;
+  const raw = input.defaultValue || input.getAttribute("value") || input.min || "0";
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : 0;
+};
+
+const getDefaultIdentityFromDom = () => {
+  const identity = {};
+  document.querySelectorAll(".identity .label-row").forEach((row) => {
+    const key = row.querySelector("span")?.textContent.trim() || "Unknown";
+    const input = row.querySelector("input");
+    identity[key] = input ? input.defaultValue ?? "" : "";
+  });
+  return identity;
+};
+
+const getDefaultNotesFromDom = () => {
+  const select = document.getElementById("noteSelect");
+  if (select && "options" in select) {
+    return Array.from(select.options).map((option) => ({
+      title: option.value || option.textContent || "Untitled",
+      text: "",
+    }));
+  }
+  return Array.from(document.querySelectorAll(".note-section")).map((section) => {
+    const title = section.dataset.noteTitle || "Untitled";
+    const textarea = section.querySelector("textarea");
+    return {
+      title,
+      text: textarea ? textarea.defaultValue ?? "" : "",
+    };
+  });
+};
+
+const getDefaultSlidersFromDom = (sectionName, selector) => {
+  const section = sectionByName(sectionName);
+  if (!section) return {};
+  const sliders = {};
+  section.querySelectorAll(selector).forEach((row) => {
+    const spans = row.querySelectorAll("span");
+    const left = spans[0]?.textContent.trim() || "Left";
+    const right = spans[1]?.textContent.trim() || "Right";
+    const key = `${left} / ${right}`;
+    const input = row.querySelector("input[type=\"range\"]");
+    sliders[key] = getDefaultRangeValue(input);
+  });
+  return sliders;
+};
+
+const buildDefaultSnapshot = () => {
+  const base = defaultsSnapshot ?? {
+    identity: getDefaultIdentityFromDom(),
+    notes: getDefaultNotesFromDom(),
+    mind: { sliders: getDefaultSlidersFromDom("mind", ".range-row") },
+    social: { sliders: getDefaultSlidersFromDom("social", ".social-slider") },
+  };
+  return {
+    version: 2,
+    identity: { ...(base?.identity ?? {}) },
+    notes: Array.isArray(base?.notes) ? base.notes.map((note) => ({ ...note })) : [],
+    body: { stats: {} },
+    skills: { stats: {} },
+    priorities: { stats: {} },
+    mind: {
+      stats: {},
+      sliders: { ...(base?.mind?.sliders ?? {}) },
+      traits: {},
+    },
+    social: {
+      stats: {},
+      sliders: { ...(base?.social?.sliders ?? {}) },
+      traits: {},
+    },
+    portrait: null,
+  };
+};
+
 const resetToDefaults = () => {
   if (!defaultsSnapshot) return;
   applySnapshot(defaultsSnapshot);
@@ -489,6 +567,7 @@ export const resetSheetToDefaults = () => {
 };
 
 export const getBlankSnapshot = () => buildBlankSnapshot();
+export const getDefaultSnapshot = () => buildDefaultSnapshot();
 
 const resetStatDotsIn = (container) => {
   if (!container) return;
