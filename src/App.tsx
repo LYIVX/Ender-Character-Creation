@@ -68,7 +68,7 @@ const noteOptions = [
   "Extras",
 ];
 
-type RelationshipTab = "family" | "friends";
+type RelationshipTab = "family" | "friends" | "love" | "hate";
 
 type RelationshipEntry = {
   id: string;
@@ -82,11 +82,37 @@ type RelationshipEntry = {
 const createRelationshipDefaults = (): Record<RelationshipTab, RelationshipEntry[]> => ({
   family: [],
   friends: [],
+  love: [],
+  hate: [],
 });
 const createRelationshipSelectionDefaults = (): Record<RelationshipTab, string | null> => ({
   family: null,
   friends: null,
+  love: null,
+  hate: null,
 });
+const normalizeRelationshipMap = (
+  value: Partial<Record<RelationshipTab, RelationshipEntry[]>> | undefined | null
+): Record<RelationshipTab, RelationshipEntry[]> => {
+  const fallback = createRelationshipDefaults();
+  return {
+    family: Array.isArray(value?.family) ? value.family : fallback.family,
+    friends: Array.isArray(value?.friends) ? value.friends : fallback.friends,
+    love: Array.isArray(value?.love) ? value.love : fallback.love,
+    hate: Array.isArray(value?.hate) ? value.hate : fallback.hate,
+  };
+};
+const normalizeRelationshipSelection = (
+  value: Partial<Record<RelationshipTab, string | null>> | undefined | null
+): Record<RelationshipTab, string | null> => {
+  const fallback = createRelationshipSelectionDefaults();
+  return {
+    family: typeof value?.family === "string" ? value.family : fallback.family,
+    friends: typeof value?.friends === "string" ? value.friends : fallback.friends,
+    love: typeof value?.love === "string" ? value.love : fallback.love,
+    hate: typeof value?.hate === "string" ? value.hate : fallback.hate,
+  };
+};
 const tabsStorageKey = "cc-sheet-tabs";
 
 const createTabId = () => {
@@ -111,16 +137,8 @@ const createInitialTabs = () => {
               ? tab.title
               : `Sheet ${index + 1}`,
           data: tab?.data ?? null,
-          relationships: Array.isArray(tab?.relationships?.family) &&
-            Array.isArray(tab?.relationships?.friends)
-            ? tab.relationships
-            : createRelationshipDefaults(),
-          relationshipSelection:
-            tab?.relationshipSelection &&
-            "family" in tab.relationshipSelection &&
-            "friends" in tab.relationshipSelection
-              ? tab.relationshipSelection
-              : createRelationshipSelectionDefaults(),
+          relationships: normalizeRelationshipMap(tab?.relationships),
+          relationshipSelection: normalizeRelationshipSelection(tab?.relationshipSelection),
         }));
         if (tabs.length) {
           const activeId =
@@ -216,9 +234,9 @@ export default function App() {
     if (!sheetReady || hasAppliedStoredTab.current) return;
     const activeTab = tabsRef.current.find((tab) => tab.id === activeTabId);
     applySheetSnapshot(activeTab?.data ?? null);
-    setRelationshipMap(activeTab?.relationships ?? createRelationshipDefaults());
+    setRelationshipMap(normalizeRelationshipMap(activeTab?.relationships));
     setRelationshipSelection(
-      activeTab?.relationshipSelection ?? createRelationshipSelectionDefaults()
+      normalizeRelationshipSelection(activeTab?.relationshipSelection)
     );
     hasAppliedStoredTab.current = true;
   }, [activeTabId, sheetReady]);
@@ -545,8 +563,8 @@ export default function App() {
   const applyTabSnapshot = (tabId: string) => {
     const target = tabsRef.current.find((tab) => tab.id === tabId);
     applySheetSnapshot(target?.data ?? null);
-    setRelationshipMap(target?.relationships ?? createRelationshipDefaults());
-    setRelationshipSelection(target?.relationshipSelection ?? createRelationshipSelectionDefaults());
+    setRelationshipMap(normalizeRelationshipMap(target?.relationships));
+    setRelationshipSelection(normalizeRelationshipSelection(target?.relationshipSelection));
     const nextTitle = getCharacterNameFromSnapshot(target?.data);
     if (nextTitle) {
       setTabs((prev) =>
@@ -599,10 +617,8 @@ export default function App() {
       if (nextTab) {
         setActiveTabId(nextTab.id);
         applySheetSnapshot(nextTab.data ?? null);
-        setRelationshipMap(nextTab.relationships ?? createRelationshipDefaults());
-        setRelationshipSelection(
-          nextTab.relationshipSelection ?? createRelationshipSelectionDefaults()
-        );
+        setRelationshipMap(normalizeRelationshipMap(nextTab.relationships));
+        setRelationshipSelection(normalizeRelationshipSelection(nextTab.relationshipSelection));
       }
     }
   };
@@ -629,14 +645,14 @@ export default function App() {
           id: nextId,
           title: nextTitle,
           data,
-          relationships: data?.relationships ?? createRelationshipDefaults(),
-          relationshipSelection: data?.relationshipSelection ?? createRelationshipSelectionDefaults(),
+          relationships: normalizeRelationshipMap(data?.relationships),
+          relationshipSelection: normalizeRelationshipSelection(data?.relationshipSelection),
         },
       ]);
       setActiveTabId(nextId);
       applySheetSnapshot(data);
-      setRelationshipMap(data?.relationships ?? createRelationshipDefaults());
-      setRelationshipSelection(data?.relationshipSelection ?? createRelationshipSelectionDefaults());
+      setRelationshipMap(normalizeRelationshipMap(data?.relationships));
+      setRelationshipSelection(normalizeRelationshipSelection(data?.relationshipSelection));
     } catch (err) {
       console.error("Invalid import file", err);
     } finally {
@@ -779,8 +795,40 @@ export default function App() {
     },
     onDelete: () => removeRelationship("friends", entry.id),
   }));
+  const loveDropdownItems = relationshipMap.love.map((entry) => ({
+    id: entry.id,
+    label: entry.name,
+    avatarUrl: entry.portrait ?? null,
+    avatarFallback: entry.name.slice(0, 1).toUpperCase(),
+    onClick: () => {
+      setRelationshipTab("love");
+      setRelationshipSelection((prev) => ({ ...prev, love: entry.id }));
+    },
+    onEdit: () => {
+      setRelationshipTab("love");
+      setRelationshipSelection((prev) => ({ ...prev, love: entry.id }));
+    },
+    onDelete: () => removeRelationship("love", entry.id),
+  }));
+  const hateDropdownItems = relationshipMap.hate.map((entry) => ({
+    id: entry.id,
+    label: entry.name,
+    avatarUrl: entry.portrait ?? null,
+    avatarFallback: entry.name.slice(0, 1).toUpperCase(),
+    onClick: () => {
+      setRelationshipTab("hate");
+      setRelationshipSelection((prev) => ({ ...prev, hate: entry.id }));
+    },
+    onEdit: () => {
+      setRelationshipTab("hate");
+      setRelationshipSelection((prev) => ({ ...prev, hate: entry.id }));
+    },
+    onDelete: () => removeRelationship("hate", entry.id),
+  }));
   const familyAvatar = relationshipMap.family[0]?.portrait ?? null;
   const friendsAvatar = relationshipMap.friends[0]?.portrait ?? null;
+  const loveAvatar = relationshipMap.love[0]?.portrait ?? null;
+  const hateAvatar = relationshipMap.hate[0]?.portrait ?? null;
 
   return (
     <div className="page">
@@ -1093,7 +1141,14 @@ export default function App() {
                   <span className="panel-title">Connections</span>
                   <div className="relationship-actions">
                     <Button type="button" onClick={triggerRelationshipImport}>
-                      Import to {relationshipTab === "family" ? "Family" : "Friends"}
+                      Import to{" "}
+                      {relationshipTab === "family"
+                        ? "Family"
+                        : relationshipTab === "friends"
+                          ? "Friends"
+                          : relationshipTab === "love"
+                            ? "Love"
+                            : "Hate"}
                     </Button>
                     <input
                       ref={relationshipInputRef}
@@ -1129,6 +1184,30 @@ export default function App() {
                     onOpenChange={(open) => {
                       setRelationshipDropdownOpen(open ? "friends" : null);
                       if (open) setRelationshipTab("friends");
+                    }}
+                  />
+                  <Dropdown
+                    variant="user-list"
+                    name={`Love (${relationshipMap.love.length})`}
+                    avatarUrl={loveAvatar}
+                    items={loveDropdownItems}
+                    emptyLabel="No love entries yet."
+                    open={relationshipDropdownOpen === "love"}
+                    onOpenChange={(open) => {
+                      setRelationshipDropdownOpen(open ? "love" : null);
+                      if (open) setRelationshipTab("love");
+                    }}
+                  />
+                  <Dropdown
+                    variant="user-list"
+                    name={`Hate (${relationshipMap.hate.length})`}
+                    avatarUrl={hateAvatar}
+                    items={hateDropdownItems}
+                    emptyLabel="No hate entries yet."
+                    open={relationshipDropdownOpen === "hate"}
+                    onOpenChange={(open) => {
+                      setRelationshipDropdownOpen(open ? "hate" : null);
+                      if (open) setRelationshipTab("hate");
                     }}
                   />
                 </div>
