@@ -38,6 +38,12 @@ const themeOptions: { value: ThemeMode; label: string }[] = [
 ];
 
 const isTauri = typeof window !== "undefined" && "__TAURI_IPC__" in window;
+const isMobilePlatform = () => {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent.toLowerCase();
+  return /android|iphone|ipad|ipod|mobile/.test(ua);
+};
+const supportsHubAuth = isTauri && !isMobilePlatform();
 const appId = "character-creation-sheet";
 
 const IconChevronDown = () => (
@@ -231,7 +237,7 @@ export default function App() {
   const relationshipInputRef = useRef<HTMLInputElement | null>(null);
   const isSharedTheme = (mode: ThemeMode) => mode !== "atelier";
   const [entitlementStatus, setEntitlementStatus] = useState<"checking" | "allowed" | "locked">(
-    isTauri ? "checking" : "allowed"
+    supportsHubAuth ? "checking" : "allowed"
   );
   const [requestedBrowser, setRequestedBrowser] = useState(false);
   const [isPremium, setIsPremium] = useState(!isTauri);
@@ -429,13 +435,17 @@ export default function App() {
   }, [themeMode, sharedThemeAllowed]);
 
   useEffect(() => {
-    if (isTauri) return;
-    const params = new URLSearchParams(window.location.search);
-    setIsPremium(params.get("tier") === "premium");
+    if (supportsHubAuth) return;
+    if (!isTauri) {
+      const params = new URLSearchParams(window.location.search);
+      setIsPremium(params.get("tier") === "premium");
+      return;
+    }
+    setIsPremium(true);
   }, []);
 
   const refreshEntitlement = async () => {
-    if (!isTauri) {
+    if (!supportsHubAuth) {
       setEntitlementStatus("allowed");
       setIsPremium(true);
       return;
@@ -459,14 +469,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!isTauri) return;
+    if (!supportsHubAuth) return;
     const interval = window.setInterval(() => {
       refreshEntitlement();
     }, 5 * 60 * 1000);
     return () => window.clearInterval(interval);
-  }, [isTauri]);
+  }, [supportsHubAuth]);
 
   useEffect(() => {
+    if (!supportsHubAuth) return;
     if (entitlementStatus !== "locked" || requestedBrowser) return;
     setRequestedBrowser(true);
     openAppBrowser(appId);
@@ -558,7 +569,7 @@ export default function App() {
     ? launchToken.avatarPath.replace(/\\/g, "/")
     : null;
   const canUseLocalAvatar =
-    isTauri &&
+    supportsHubAuth &&
     typeof window !== "undefined" &&
     (window.location.protocol === "tauri:" || window.location.hostname === "tauri.localhost");
   const avatarUrl =
